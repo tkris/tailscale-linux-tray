@@ -121,6 +121,10 @@ tailscale-linux-tray/
 
 Die Installation und zentrale Tray-Funktionen wurden unter Nobara KDE und CachyOS KDE praktisch ausprobiert. Einzelne Abläufe, insbesondere unterschiedliche Exit-Node-Konfigurationen und die Ersteinrichtung auf weiteren Systemen, sollten vor einem allgemeinen Stable-Release zusätzlich getestet werden.
 
+## Transparenz zur KI-Unterstützung
+
+Dieses Projekt wurde mit Unterstützung von **OpenAI ChatGPT** entwickelt. KI wurde unter anderem beim Entwerfen und Überarbeiten von Python- und Shell-Skripten, bei der Fehlersuche sowie bei der Erstellung der Dokumentation eingesetzt. Die praktische Erprobung auf Nobara und CachyOS erfolgte durch den Projektbetreiber. KI-generierte Vorschläge und Code können Fehler enthalten; bitte prüfe Änderungen vor dem Einsatz auf deinem System.
+
 ---
 
 *Tailscale Linux Tray ist ein unabhängiges Community-Projekt und kein offizielles Produkt von Tailscale.*
@@ -243,6 +247,10 @@ tailscale-linux-tray/
 ## Project status
 
 Installation and core tray functions have been tested on Nobara KDE and CachyOS KDE. Some workflows, particularly different exit-node setups and first-time login on additional systems, still need more testing before a general stable release.
+
+## AI assistance disclosure
+
+This project was developed with assistance from **OpenAI ChatGPT**. AI was used to help draft and revise Python and shell scripts, troubleshoot issues, and prepare documentation. Hands-on testing on Nobara and CachyOS was performed by the project maintainer. AI-generated suggestions and code may contain mistakes; please review changes before running them on your system.
 
 ---
 
