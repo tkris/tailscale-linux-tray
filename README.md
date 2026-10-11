@@ -1,5 +1,11 @@
 # Tailscale Linux Tray
 
+**🇩🇪 [Deutsch](#deutsch) | 🇬🇧 [English](#english)**
+
+---
+
+## Deutsch
+
 Ein leichtgewichtiges **Tailscale-System-Tray für Linux mit KDE Plasma**. Es ermöglicht, Tailscale direkt über die Taskleiste zu steuern – einschließlich Verbindungsstatus, Subnetz-Routen und Exit-Node-Auswahl.
 
 **Aktueller Entwicklungsstand:** v8 · **Sprache der Oberfläche:** Deutsch
@@ -118,3 +124,126 @@ Die Installation und zentrale Tray-Funktionen wurden unter Nobara KDE und CachyO
 ---
 
 *Tailscale Linux Tray ist ein unabhängiges Community-Projekt und kein offizielles Produkt von Tailscale.*
+
+---
+
+## English
+
+A lightweight **Tailscale system tray for Linux with KDE Plasma**. Control Tailscale directly from your desktop panel, including connection status, subnet routes, and exit-node selection.
+
+**Current development version:** v8 · **Application UI language:** German
+
+## Supported systems
+
+| Distribution | Desktop | Package manager | Status |
+| --- | --- | --- | --- |
+| Nobara Linux | KDE Plasma | `dnf` | Installation and tray tested |
+| CachyOS | KDE Plasma | `pacman` | Installation and tray tested |
+
+Other distributions and Linux Mint Cinnamon are not officially supported yet.
+
+## Features
+
+- **Tray status:** Green when connected, red when disconnected, and gray when login is required.
+- **Connect and disconnect:** From the context menu or by clicking the tray icon.
+- **Initial setup:** Browser-based login to a Tailscale account.
+- **Permissions:** If access is denied, the tray can ask for consent and request a one-time administrator authorization through KDE Polkit to configure the current user as a Tailscale operator.
+- **Accept subnet routes:** Context-menu checkbox; changes take effect via `tailscale set --accept-routes=true|false`.
+- **Select an exit node:** Available exit nodes are discovered dynamically. You can also disable exit-node usage.
+- **View status:** Display Tailscale status from the tray.
+- **Autostart:** Start the tray automatically with the KDE session.
+- **Updates and backups:** The installer updates existing tray installations and backs up installed files.
+- **Uninstallation:** Dedicated script with optional deletion of backups.
+
+**Note:** Accepting subnet routes allows the client to use routes advertised by other devices; it does **not** turn your device into a subnet router. Selecting an exit node does not make your device an exit node either.
+
+## Installation
+
+### Clone the repository
+
+```bash
+git clone https://github.com/tkris/tailscale-linux-tray.git
+cd tailscale-linux-tray
+bash install.sh
+```
+
+If the repository is private, you need a GitHub account with access to it.
+
+Alternatively, download the repository as a ZIP file from GitHub, extract it, and run `bash install.sh` inside the extracted folder.
+
+**Run the installer as your regular user, not with `sudo bash install.sh`.** It will ask for administrator privileges separately when required.
+
+The installer checks the distribution, KDE Plasma, dependencies, and the `tailscaled` service. Missing packages are installed only after your confirmation. It then offers to launch the tray.
+
+## Updating
+
+If you cloned the repository:
+
+```bash
+cd tailscale-linux-tray
+git pull
+bash install.sh
+```
+
+`git pull` updates the project files only. Running `bash install.sh` applies the update to the installed tray.
+
+## Usage
+
+The right-click menu includes:
+
+- Connect or disconnect Tailscale
+- Enable or disable **Accept subnet routes**
+- Choose an available device under **Exit Node**, or select **Do not use an exit node**
+- Show Tailscale status
+- Quit the tray
+
+The subnet-route checkbox reflects the current Tailscale preference. Available exit nodes are read from `tailscale status --json`. An exit node must already be advertised and approved in your tailnet.
+
+**Caution:** Selecting an exit node can change the route of your internet traffic. The setting for local LAN access while using an exit node is not changed automatically.
+
+## Uninstallation
+
+From the project directory:
+
+```bash
+bash uninstall.sh
+```
+
+Run the uninstaller **without `sudo`**. It asks for confirmation before stopping the installed tray and removing:
+
+- `~/.local/share/tailscale-tray/tailscale-tray.py`
+- `~/.config/autostart/tailscale-tray.desktop`
+- The application directory, if empty afterwards
+
+**Backups:** If `~/.local/share/tailscale-tray-backups/` exists, the script asks **separately** whether to permanently delete the backup directory. The default answer, **No**, keeps the backups.
+
+**Not removed:** The Tailscale package, `tailscaled`, Tailscale login, network settings, and the local Git repository.
+
+## Requirements and notes
+
+- KDE Plasma with working system tray support
+- Python 3 and PyQt6
+- Tailscale and its `tailscaled` service
+- For graphical administrator authentication: `pkexec` and a working Polkit agent
+
+After a kernel update, `tailscaled` may fail if the system is still running the previous kernel. Check the service status and logs first; the tray does not repair the system-level Tailscale installation.
+
+## Project files
+
+```text
+tailscale-linux-tray/
+├── README.md
+├── install.sh
+├── uninstall.sh
+├── tailscale-tray.py
+└── autostart/
+    └── tailscale-tray.desktop
+```
+
+## Project status
+
+Installation and core tray functions have been tested on Nobara KDE and CachyOS KDE. Some workflows, particularly different exit-node setups and first-time login on additional systems, still need more testing before a general stable release.
+
+---
+
+*Tailscale Linux Tray is an independent community project and is not an official Tailscale product.*
