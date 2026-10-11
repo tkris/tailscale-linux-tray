@@ -78,7 +78,7 @@ rollback() {
 }
 trap rollback ERR INT TERM EXIT
 
-printf '\n=== Tailscale Tray v10 – Linux Installer / Updater ===\n\n'
+printf '\n=== Tailscale Tray v10.0.1 – Linux Installer / Updater ===\n\n'
 [[ "$EUID" -ne 0 ]] || fail 'Nicht mit sudo ausführen.'
 [[ -f "$SOURCE_DIR/tailscale-tray.py" ]] || fail 'tailscale-tray.py fehlt.'
 [[ -f "$SOURCE_DIR/autostart/tailscale-tray.desktop" ]] || fail 'Autostart-Vorlage fehlt.'
@@ -127,6 +127,18 @@ elif confirm 'tailscaled ist inaktiv. Aktivieren und starten?'; then
   sudo systemctl enable --now tailscaled || fail 'tailscaled konnte nicht gestartet werden. Bitte journalctl -u tailscaled -b prüfen.'
   systemctl is-active --quiet tailscaled || fail 'tailscaled läuft nach dem Startversuch nicht. Bitte journalctl -u tailscaled -b prüfen.';
 else printf '  Dienst unverändert; Tray benötigt einen laufenden tailscaled.\n'; fi
+
+# Check boot-time activation independently of whether the service is running.
+if systemctl is-enabled --quiet tailscaled; then
+  printf '  Autostart von tailscaled aktiviert ✓\n'
+elif confirm 'tailscaled startet derzeit nicht automatisch beim Systemstart. Autostart aktivieren?'; then
+  sudo systemctl enable tailscaled || fail 'Autostart von tailscaled konnte nicht aktiviert werden.'
+  systemctl is-enabled --quiet tailscaled || fail 'Autostart von tailscaled ist weiterhin nicht aktiviert.'
+  printf '  Autostart von tailscaled aktiviert ✓\n'
+else
+  printf '  Autostart unverändert; tailscaled startet nach einem Neustart möglicherweise nicht automatisch.\n'
+fi
+
 
 printf '[4/7] Bestehende Installation und Prozesse suchen ...\n'
 if [[ -f "$NEW_PY" ]]; then

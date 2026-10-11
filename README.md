@@ -8,7 +8,7 @@
 
 Ein **Tailscale-System-Tray für Linux mit KDE Plasma und Cinnamon**. Es ermöglicht die komfortable Steuerung von Tailscale direkt über die Taskleiste – einschließlich Verbindungsstatus, Subnetz-Routen und Exit-Node-Auswahl.
 
-**Aktuelle Version:** v10 · **Oberfläche und Skriptmeldungen:** Deutsch/Englisch
+**Aktuelle Version:** v10.0.1 · **Oberfläche und Skriptmeldungen:** Deutsch/Englisch
 
 ## Unterstützte Systeme
 
@@ -51,7 +51,7 @@ Alternativ kannst du das Projekt als ZIP von GitHub herunterladen, entpacken und
 
 **Installer als normaler Benutzer starten – nicht mit `sudo bash install.sh`.** Wenn Systempakete oder Dienste angepasst werden müssen, fragt das Skript gesondert nach Administratorrechten.
 
-Der Installer prüft die Linux-Distribution, KDE Plasma oder Cinnamon, benötigte Programme und den Dienst `tailscaled`. Fehlende Pakete werden nur nach Zustimmung installiert. Er bietet anschließend an, das Tray zu starten.
+Der Installer prüft die Linux-Distribution, KDE Plasma oder Cinnamon, benötigte Programme sowie den Dienst `tailscaled`. Er prüft **unabhängig vom aktuellen Dienststatus**, ob `tailscaled` beim Systemstart automatisch aktiviert ist, und bietet bei Bedarf die Aktivierung nach Rückfrage an. Fehlende Pakete werden nur nach Zustimmung installiert. Er bietet anschließend an, das Tray zu starten.
 
 ## Updates
 
@@ -136,7 +136,7 @@ Dieses Projekt wurde mit Unterstützung von **OpenAI ChatGPT** entwickelt. KI wu
 
 A **Tailscale system tray for Linux desktops running KDE Plasma or Cinnamon**. It provides convenient access to Tailscale controls directly from the system tray, including connection status, subnet routes, and exit node selection.
 
-**Current version:** v10 · **UI and script messages:** German/English
+**Current version:** v10.0.1 · **UI and script messages:** German/English
 
 ## Supported systems
 
@@ -179,7 +179,7 @@ Alternatively, download the repository as a ZIP file from GitHub, extract it, an
 
 **Run the installer as your regular user, not with `sudo bash install.sh`.** It will ask for administrator privileges separately when required.
 
-The installer checks the distribution, KDE Plasma or Cinnamon, dependencies, and the `tailscaled` service. Missing packages are installed only after your confirmation. It then offers to launch the tray.
+The installer checks the distribution, KDE Plasma or Cinnamon, dependencies, and the `tailscaled` service. It **independently checks** whether `tailscaled` is enabled at boot, even when the service is already running, and offers to enable it with confirmation. Missing packages are installed only after your confirmation. It then offers to launch the tray.
 
 ## Updating
 

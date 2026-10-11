@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Simple Tailscale tray for Linux desktops supporting StatusNotifier."""
-APP_VERSION = "10.0.0"
+APP_VERSION = "10.0.1"
 import json
 import os
 import re
