@@ -6,9 +6,9 @@
 
 ## Deutsch
 
-Ein leichtgewichtiges **Tailscale-System-Tray für Linux mit KDE Plasma**. Es ermöglicht, Tailscale direkt über die Taskleiste zu steuern – einschließlich Verbindungsstatus, Subnetz-Routen und Exit-Node-Auswahl.
+Ein leichtgewichtiges **Tailscale-System-Tray für Linux mit KDE Plasma und Cinnamon**. Es ermöglicht, Tailscale direkt über die Taskleiste zu steuern – einschließlich Verbindungsstatus, Subnetz-Routen und Exit-Node-Auswahl.
 
-**Aktueller Entwicklungsstand:** v9 · **Sprachen:** Deutsch und Englisch (automatische Erkennung)
+**Aktuelle Version:** v10 · **Oberfläche und Skriptmeldungen:** Deutsch/Englisch
 
 ## Unterstützte Systeme
 
@@ -16,29 +16,24 @@ Ein leichtgewichtiges **Tailscale-System-Tray für Linux mit KDE Plasma**. Es er
 | --- | --- | --- | --- |
 | Nobara Linux | KDE Plasma | `dnf` | Installation und Tray getestet |
 | CachyOS | KDE Plasma | `pacman` | Installation und Tray getestet |
+| Linux Mint 22.1 | Cinnamon (X11) | `apt` | Installation, Tray und Browser-Anmeldung getestet; weitere Funktionen noch nicht vollständig getestet |
 
-Weitere Distributionen und Linux Mint Cinnamon sind derzeit nicht offiziell unterstützt.
+Andere Distributionen sind derzeit nicht offiziell unterstützt.
 
 ## Funktionen
 
 - **Tray-Status:** Grün bei bestehender Verbindung, Rot bei getrennter Verbindung und Grau, wenn eine Anmeldung erforderlich ist.
 - **Verbinden und Trennen:** Über das Kontextmenü oder per Klick auf das Tray-Symbol.
 - **Ersteinrichtung:** Unterstützung für die Anmeldung am Tailscale-Account über den Browser.
-- **Berechtigungen:** Bei fehlenden Rechten kann nach Zustimmung eine einmalige Administratorfreigabe über KDE Polkit angefordert und der aktuelle Benutzer als Tailscale-Operator eingerichtet werden.
+- **Berechtigungen:** Bei fehlenden Rechten kann nach Zustimmung eine einmalige Administratorfreigabe über den System-Polkit-Agenten angefordert und der aktuelle Benutzer als Tailscale-Operator eingerichtet werden.
 - **Subnetz-Routen akzeptieren:** Checkbox im Kontextmenü; Änderungen werden direkt über `tailscale set --accept-routes=true|false` angewendet.
 - **Exit Node auswählen:** Verfügbare Exit Nodes werden dynamisch aus dem Tailscale-Status gelesen. Die Nutzung kann im Menü auch wieder deaktiviert werden.
 - **Status anzeigen:** Tailscale-Status direkt aus dem Tray abrufen.
-- **Autostart:** Automatischer Start des Trays mit der KDE-Sitzung.
+- **Autostart:** Automatischer Start des Trays mit der Desktop-Sitzung.
 - **Updates und Backups:** Der Installer kann bestehende Tray-Versionen aktualisieren und zuvor installierte Dateien sichern.
 - **Deinstallation:** Separates Skript mit optionaler Löschung der angelegten Backups.
 
 **Hinweis:** Die Option „Subnetz-Routen akzeptieren“ verwendet bereits von anderen Geräten angebotene Routen. Sie richtet **keinen eigenen Subnet-Router** ein. Ebenso wählt die Exit-Node-Funktion einen bestehenden Exit Node aus; sie macht den Laptop nicht selbst zum Exit Node.
-
-## Sprache / Language
-
-Das Tray und die Ausgaben von `install.sh` und `uninstall.sh` verwenden automatisch Deutsch bei einer deutschen Linux-Spracheinstellung und ansonsten Englisch. Berücksichtigt werden `LANGUAGE`, `LC_ALL`, `LC_MESSAGES` und `LANG` (in dieser Reihenfolge). Die Ausgabe externer Werkzeuge wie `dnf`, `pacman`, `systemctl` oder `tailscale` hängt weiterhin von diesen Programmen ab.
-
-Zum Testen kannst du beispielsweise `LANGUAGE=en_US LANG=en_US.UTF-8 bash install.sh` verwenden. Für das Tray gilt entsprechend `LANGUAGE=en_US /usr/bin/python3 tailscale-tray.py`.
 
 ## Installation
 
@@ -56,7 +51,7 @@ Alternativ kannst du das Projekt als ZIP von GitHub herunterladen, entpacken und
 
 **Installer als normaler Benutzer starten – nicht mit `sudo bash install.sh`.** Wenn Systempakete oder Dienste angepasst werden müssen, fragt das Skript gesondert nach Administratorrechten.
 
-Der Installer prüft die Linux-Distribution, KDE Plasma, benötigte Programme und den Dienst `tailscaled`. Fehlende Pakete werden nur nach Zustimmung installiert. Er bietet anschließend an, das Tray zu starten.
+Der Installer prüft die Linux-Distribution, KDE Plasma oder Cinnamon, benötigte Programme und den Dienst `tailscaled`. Fehlende Pakete werden nur nach Zustimmung installiert. Er bietet anschließend an, das Tray zu starten.
 
 ## Updates
 
@@ -104,7 +99,7 @@ Der Deinstaller wird **ohne `sudo`** gestartet und fragt vor dem Entfernen der T
 
 ## Voraussetzungen und Hinweise
 
-- KDE Plasma mit funktionierender System-Tray-Unterstützung
+- KDE Plasma oder Cinnamon mit funktionierender System-Tray-Unterstützung
 - Python 3 und PyQt6
 - Tailscale und der Dienst `tailscaled`
 - Für die grafische Administratorfreigabe: `pkexec` und ein funktionierender Polkit-Agent
@@ -118,9 +113,6 @@ tailscale-linux-tray/
 ├── README.md
 ├── install.sh
 ├── uninstall.sh
-├── lang/
-│   ├── install.sh
-│   └── uninstall.sh
 ├── tailscale-tray.py
 └── autostart/
     └── tailscale-tray.desktop
@@ -128,11 +120,11 @@ tailscale-linux-tray/
 
 ## Projektstatus
 
-Die Installation und zentrale Tray-Funktionen wurden unter Nobara KDE und CachyOS KDE praktisch ausprobiert. Einzelne Abläufe, insbesondere unterschiedliche Exit-Node-Konfigurationen und die Ersteinrichtung auf weiteren Systemen, sollten vor einem allgemeinen Stable-Release zusätzlich getestet werden.
+Die Installation und zentrale Tray-Funktionen wurden unter Nobara KDE und CachyOS KDE praktisch ausprobiert. Auf Linux Mint 22.1 Cinnamon wurden Installation, Tray-Menü, Erkennung des fehlenden Logins und Browser-Anmeldung praktisch getestet. Weitere Abläufe wie unterschiedliche Exit-Node-Konfigurationen und Verbindungswechsel sind noch nicht auf allen Systemen geprüft.
 
 ## Transparenz zur KI-Unterstützung
 
-Dieses Projekt wurde mit Unterstützung von **OpenAI ChatGPT** entwickelt. KI wurde unter anderem beim Entwerfen und Überarbeiten von Python- und Shell-Skripten, bei der Fehlersuche sowie bei der Erstellung der Dokumentation eingesetzt. Die praktische Erprobung auf Nobara und CachyOS erfolgte durch den Projektbetreiber. KI-generierte Vorschläge und Code können Fehler enthalten; bitte prüfe Änderungen vor dem Einsatz auf deinem System.
+Dieses Projekt wurde mit Unterstützung von **OpenAI ChatGPT** entwickelt. KI wurde unter anderem beim Entwerfen und Überarbeiten von Python- und Shell-Skripten, bei der Fehlersuche sowie bei der Erstellung der Dokumentation eingesetzt. Die praktische Erprobung auf Nobara, CachyOS und Linux Mint erfolgte durch den Projektbetreiber. KI-generierte Vorschläge und Code können Fehler enthalten; bitte prüfe Änderungen vor dem Einsatz auf deinem System.
 
 ---
 
@@ -142,9 +134,9 @@ Dieses Projekt wurde mit Unterstützung von **OpenAI ChatGPT** entwickelt. KI wu
 
 ## English
 
-A lightweight **Tailscale system tray for Linux with KDE Plasma**. Control Tailscale directly from your desktop panel, including connection status, subnet routes, and exit-node selection.
+A lightweight **Tailscale system tray for Linux with KDE Plasma and Cinnamon**. Control Tailscale directly from your desktop panel, including connection status, subnet routes, and exit-node selection.
 
-**Current development version:** v9 · **Languages:** German and English (automatically detected)
+**Current version:** v10 · **UI and script messages:** German/English
 
 ## Supported systems
 
@@ -152,29 +144,24 @@ A lightweight **Tailscale system tray for Linux with KDE Plasma**. Control Tails
 | --- | --- | --- | --- |
 | Nobara Linux | KDE Plasma | `dnf` | Installation and tray tested |
 | CachyOS | KDE Plasma | `pacman` | Installation and tray tested |
+| Linux Mint 22.1 | Cinnamon (X11) | `apt` | Installation, tray and browser sign-in tested; remaining features not fully tested |
 
-Other distributions and Linux Mint Cinnamon are not officially supported yet.
+Other distributions are not officially supported yet.
 
 ## Features
 
 - **Tray status:** Green when connected, red when disconnected, and gray when login is required.
 - **Connect and disconnect:** From the context menu or by clicking the tray icon.
 - **Initial setup:** Browser-based login to a Tailscale account.
-- **Permissions:** If access is denied, the tray can ask for consent and request a one-time administrator authorization through KDE Polkit to configure the current user as a Tailscale operator.
+- **Permissions:** If access is denied, the tray can ask for consent and request a one-time administrator authorization through the system Polkit agent to configure the current user as a Tailscale operator.
 - **Accept subnet routes:** Context-menu checkbox; changes take effect via `tailscale set --accept-routes=true|false`.
 - **Select an exit node:** Available exit nodes are discovered dynamically. You can also disable exit-node usage.
 - **View status:** Display Tailscale status from the tray.
-- **Autostart:** Start the tray automatically with the KDE session.
+- **Autostart:** Start the tray automatically with the desktop session.
 - **Updates and backups:** The installer updates existing tray installations and backs up installed files.
 - **Uninstallation:** Dedicated script with optional deletion of backups.
 
 **Note:** Accepting subnet routes allows the client to use routes advertised by other devices; it does **not** turn your device into a subnet router. Selecting an exit node does not make your device an exit node either.
-
-## Language
-
-The tray interface and the messages from `install.sh` and `uninstall.sh` automatically use German for German Linux locales and English otherwise. Locale precedence is `LANGUAGE`, `LC_ALL`, `LC_MESSAGES`, then `LANG`. Output from external tools such as `dnf`, `pacman`, `systemctl`, or `tailscale` remains controlled by those tools.
-
-To test English output, run `LANGUAGE=en_US LANG=en_US.UTF-8 bash install.sh`. For the tray, use `LANGUAGE=en_US /usr/bin/python3 tailscale-tray.py`.
 
 ## Installation
 
@@ -192,7 +179,7 @@ Alternatively, download the repository as a ZIP file from GitHub, extract it, an
 
 **Run the installer as your regular user, not with `sudo bash install.sh`.** It will ask for administrator privileges separately when required.
 
-The installer checks the distribution, KDE Plasma, dependencies, and the `tailscaled` service. Missing packages are installed only after your confirmation. It then offers to launch the tray.
+The installer checks the distribution, KDE Plasma or Cinnamon, dependencies, and the `tailscaled` service. Missing packages are installed only after your confirmation. It then offers to launch the tray.
 
 ## Updating
 
@@ -240,7 +227,7 @@ Run the uninstaller **without `sudo`**. It asks for confirmation before stopping
 
 ## Requirements and notes
 
-- KDE Plasma with working system tray support
+- KDE Plasma or Cinnamon with working system tray support
 - Python 3 and PyQt6
 - Tailscale and its `tailscaled` service
 - For graphical administrator authentication: `pkexec` and a working Polkit agent
@@ -254,9 +241,6 @@ tailscale-linux-tray/
 ├── README.md
 ├── install.sh
 ├── uninstall.sh
-├── lang/
-│   ├── install.sh
-│   └── uninstall.sh
 ├── tailscale-tray.py
 └── autostart/
     └── tailscale-tray.desktop
@@ -264,12 +248,21 @@ tailscale-linux-tray/
 
 ## Project status
 
-Installation and core tray functions have been tested on Nobara KDE and CachyOS KDE. Some workflows, particularly different exit-node setups and first-time login on additional systems, still need more testing before a general stable release.
+Installation and core tray functions have been tested on Nobara KDE and CachyOS KDE. On Linux Mint 22.1 Cinnamon, installation, tray menu, missing-login detection and browser sign-in have been tested. Other workflows, such as exit-node configurations and connection toggling, have not been verified on every system.
 
 ## AI assistance disclosure
 
-This project was developed with assistance from **OpenAI ChatGPT**. AI was used to help draft and revise Python and shell scripts, troubleshoot issues, and prepare documentation. Hands-on testing on Nobara and CachyOS was performed by the project maintainer. AI-generated suggestions and code may contain mistakes; please review changes before running them on your system.
+This project was developed with assistance from **OpenAI ChatGPT**. AI was used to help draft and revise Python and shell scripts, troubleshoot issues, and prepare documentation. Hands-on testing on Nobara, CachyOS and Linux Mint was performed by the project maintainer. AI-generated suggestions and code may contain mistakes; please review changes before running them on your system.
 
 ---
 
 *Tailscale Linux Tray is an independent community project and is not an official Tailscale product.*
+
+
+## Version 10 – Zusammengefasste Änderungen / Consolidated release notes
+
+**Deutsch:** Version 10 bündelt alle Änderungen seit v9 in einer Veröffentlichung: Linux Mint 22.1 Cinnamon mit `apt`-Installer, automatische Sprachwahl Deutsch/Englisch für Tray und Skriptmeldungen, übersetzte Schaltflächen in eigenen Qt-Dialogen und korrekte Zeilenumbrüche in Berechtigungs- und Fehlermeldungen. Nobara KDE und CachyOS KDE bleiben unterstützt. Systemdialoge von Polkit werden nicht verändert.
+
+**English:** Version 10 combines all changes since v9 into a single release: Linux Mint 22.1 Cinnamon with `apt` installer, automatic German/English localization for the tray and script messages, localized buttons in application-owned Qt dialogs, and proper line breaks in permission and error messages. Nobara KDE and CachyOS KDE remain supported. System Polkit dialogs are unchanged.
+
+**Teststatus / Test status:** Linux Mint installation, tray display and browser sign-in were successfully tested. The final combined v10 package and all VPN configuration features have not yet been fully regression-tested on all supported desktops.

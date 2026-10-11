@@ -78,22 +78,29 @@ rollback() {
 }
 trap rollback ERR INT TERM EXIT
 
-printf '\n=== Tailscale Tray v9 – KDE Installer / Updater ===\n\n'
+printf '\n=== Tailscale Tray v10 – Linux Installer / Updater ===\n\n'
 [[ "$EUID" -ne 0 ]] || fail 'Nicht mit sudo ausführen.'
 [[ -f "$SOURCE_DIR/tailscale-tray.py" ]] || fail 'tailscale-tray.py fehlt.'
 [[ -f "$SOURCE_DIR/autostart/tailscale-tray.desktop" ]] || fail 'Autostart-Vorlage fehlt.'
 
-printf '[1/7] Distribution und KDE prüfen ...\n'
+printf '[1/7] Distribution und Desktop prüfen ...\n'
 # shellcheck disable=SC1091
 source /etc/os-release
 case " ${ID:-} ${ID_LIKE:-} " in
   *nobara*|*fedora*) PKG_MANAGER=dnf; QT_PKG=python3-qt6 ;;
   *cachyos*|*arch*) PKG_MANAGER=pacman; QT_PKG=python-pyqt6 ;;
+  *linuxmint*|*ubuntu*|*debian*) PKG_MANAGER=apt; QT_PKG=python3-pyqt6 ;;
   *) fail "Distribution nicht unterstützt: ${PRETTY_NAME:-unbekannt}" ;;
 esac
 command -v "$PKG_MANAGER" >/dev/null || fail "Paketmanager $PKG_MANAGER fehlt."
-[[ "${XDG_CURRENT_DESKTOP:-}" == *KDE* || "${XDG_CURRENT_DESKTOP:-}" == *Plasma* || "${DESKTOP_SESSION:-}" == *plasma* ]] || fail 'KDE Plasma ist erforderlich.'
-printf '  %s / %s / KDE Plasma ✓\n' "${PRETTY_NAME:-$ID}" "$PKG_MANAGER"
+DESKTOP_NAME=""
+if [[ "${XDG_CURRENT_DESKTOP:-}" == *KDE* || "${XDG_CURRENT_DESKTOP:-}" == *Plasma* || "${DESKTOP_SESSION:-}" == *plasma* ]]; then
+  DESKTOP_NAME="KDE Plasma"
+elif [[ "${XDG_CURRENT_DESKTOP:-}" == *Cinnamon* || "${DESKTOP_SESSION:-}" == *cinnamon* ]]; then
+  DESKTOP_NAME="Cinnamon"
+fi
+[[ -n "$DESKTOP_NAME" ]] || fail 'KDE Plasma oder Cinnamon erforderlich.'
+printf '  %s / %s / %s ✓\n' "${PRETTY_NAME:-$ID}" "$PKG_MANAGER" "$DESKTOP_NAME"
 
 printf '[2/7] Abhängigkeiten prüfen ...\n'
 missing=()
@@ -103,7 +110,11 @@ if [[ ! -x "$PYTHON_BIN" ]] || ! "$PYTHON_BIN" -c 'import PyQt6.QtWidgets' >/dev
 if ((${#missing[@]})); then
   printf '  Fehlend: %s\n' "${missing[*]}"
   if confirm 'Fehlende Pakete installieren?'; then
-    if [[ "$PKG_MANAGER" == dnf ]]; then sudo dnf install "${missing[@]}"; else sudo pacman -S --needed "${missing[@]}"; fi
+    case "$PKG_MANAGER" in
+      dnf) sudo dnf install "${missing[@]}" ;;
+      pacman) sudo pacman -S --needed "${missing[@]}" ;;
+      apt) sudo apt-get update && sudo apt-get install "${missing[@]}" ;;
+    esac
   else fail 'Abgebrochen; keine Anwendungsdateien verändert.'; fi
 else printf '  Alle vorhanden ✓\n'; fi
 command -v tailscale >/dev/null || fail 'tailscale fehlt weiterhin.'
@@ -157,7 +168,7 @@ if ((${#pids[@]})); then
   done
 fi
 
-printf '[6/7] Tray und KDE-Autostart installieren ...\n'
+printf '[6/7] Tray und Autostart installieren ...\n'
 mkdir -p -- "$APP_DIR" "$AUTOSTART_DIR"
 install -m 755 -- "$SOURCE_DIR/tailscale-tray.py" "$NEW_PY"
 cat > "$NEW_DESKTOP" <<DESKTOP
@@ -168,7 +179,6 @@ Comment=Tailscale VPN status and controls
 Exec=$PYTHON_BIN $NEW_PY
 Icon=network-vpn
 Terminal=false
-X-KDE-autostart-after=panel
 DESKTOP
 chmod 644 -- "$NEW_DESKTOP"
 printf '  Dateien und Autostart aktualisiert ✓\n'

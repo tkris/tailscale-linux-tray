@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Simple Tailscale tray for Linux desktops supporting StatusNotifier."""
-APP_VERSION = "9.0.0"
+APP_VERSION = "10.0.0"
 import json
 import os
 import re
@@ -35,6 +35,29 @@ def run(*args):
         return subprocess.run(["tailscale", *args], text=True, capture_output=True, timeout=20)
     except (OSError, subprocess.TimeoutExpired) as exc:
         return subprocess.CompletedProcess(args, 1, "", str(exc))
+
+
+def question_dialog(parent, title, message, buttons, default_button):
+    """Localize only buttons owned by our application's Qt confirmation dialogs."""
+    dialog = QMessageBox(parent)
+    dialog.setIcon(QMessageBox.Icon.Question)
+    dialog.setWindowTitle(title)
+    dialog.setText(message)
+    dialog.setStandardButtons(buttons)
+    dialog.setDefaultButton(default_button)
+    translations = {
+        QMessageBox.StandardButton.Yes: tr("Ja", "Yes"),
+        QMessageBox.StandardButton.No: tr("Nein", "No"),
+        QMessageBox.StandardButton.Cancel: tr("Abbrechen", "Cancel"),
+        QMessageBox.StandardButton.Close: tr("Schließen", "Close"),
+        QMessageBox.StandardButton.Retry: tr("Wiederholen", "Retry"),
+        QMessageBox.StandardButton.Ok: "OK",
+    }
+    for button_type, label in translations.items():
+        button = dialog.button(button_type)
+        if button is not None:
+            button.setText(label)
+    return QMessageBox.StandardButton(dialog.exec())
 
 
 class TailscaleTray(QSystemTrayIcon):
@@ -216,7 +239,7 @@ class TailscaleTray(QSystemTrayIcon):
 
     @staticmethod
     def permission_denied(result):
-        message = (result.stderr or "") + "\\n" + (result.stdout or "")
+        message = (result.stderr or "") + "\n" + (result.stdout or "")
         message = message.lower()
         return "access denied" in message or "accessdenied" in message or "permission denied" in message
 
@@ -224,16 +247,16 @@ class TailscaleTray(QSystemTrayIcon):
         if not shutil.which("pkexec"):
             QMessageBox.warning(
                 None, tr('Tailscale – Berechtigung', 'Tailscale – Permissions'),
-                tr('Die Polkit-Anwendung pkexec fehlt.\\n', 'The Polkit application pkexec is missing.\\n')
-                + tr('Bitte einmal im Terminal ausführen:\\nsudo tailscale set --operator="$USER"', 'Run this once in a terminal:\\nsudo tailscale set --operator="$USER"')
+                tr('Die Polkit-Anwendung pkexec fehlt.\n', 'The Polkit application pkexec is missing.\n')
+                + tr('Bitte einmal im Terminal ausführen:\nsudo tailscale set --operator="$USER"', 'Run this once in a terminal:\nsudo tailscale set --operator="$USER"')
             )
             return False
         username = getpass.getuser()
-        answer = QMessageBox.question(
+        answer = question_dialog(
             None, tr('Tailscale – Berechtigung', 'Tailscale – Permissions'),
-            tr('Dein Benutzer darf die Tailscale-Verbindung noch nicht steuern.\\n\\n', 'Your user cannot control the Tailscale connection yet.\\n\\n')
+            tr('Dein Benutzer darf die Tailscale-Verbindung noch nicht steuern.\n\n', 'Your user cannot control the Tailscale connection yet.\n\n')
             + tr('Soll einmalig eine Administratorfreigabe über den Systemdialog ', 'Request one-time administrator authorization through the system dialog ')
-            + tr('angefordert werden?\\n\\n', '?\\n\\n')
+            + tr('angefordert werden?\n\n', '?\n\n')
             + tr(f"Der Benutzer {username} wird als Tailscale-Operator eingerichtet.", f"User {username} will be configured as a Tailscale operator."),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No
@@ -251,7 +274,7 @@ class TailscaleTray(QSystemTrayIcon):
         if result.returncode != 0:
             QMessageBox.warning(
                 None, tr('Tailscale – Berechtigung', 'Tailscale – Permissions'),
-                tr('Administratorfreigabe fehlgeschlagen oder abgebrochen.\\n\\n', 'Administrator authorization failed or was canceled.\\n\\n')
+                tr('Administratorfreigabe fehlgeschlagen oder abgebrochen.\n\n', 'Administrator authorization failed or was canceled.\n\n')
                 + (result.stderr or result.stdout or tr('Keine Details verfügbar.', 'No details available.'))
             )
             return False
@@ -286,7 +309,7 @@ class TailscaleTray(QSystemTrayIcon):
     def start_login(self):
         if self.login_process is not None:
             return
-        answer = QMessageBox.question(
+        answer = question_dialog(
             None, tr('Tailscale – Ersteinrichtung', 'Tailscale – Initial setup'),
             tr('Dieser Rechner ist noch nicht bei Tailscale angemeldet.\n\n', 'This computer is not signed in to Tailscale yet.\n\n')
             + tr('Soll die Anmeldung gestartet werden? Ein Link wird im Browser geöffnet.', 'Start sign-in? A link will open in your browser.'),
