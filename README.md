@@ -33,6 +33,12 @@ Other distributions are not officially supported yet.
 - **Updates and backups:** The installer updates existing tray installations and backs up installed files.
 - **Uninstallation:** Dedicated script with optional deletion of backups.
 
+### Screenshot
+
+![Tailscale Linux Tray](tailscale-tray-screenshot.png)
+
+*Tailscale Linux Tray on KDE Plasma — German context menu (disconnected).*
+
 **Note:** Accepting subnet routes allows the client to use routes advertised by other devices; it does **not** turn your device into a subnet router. Selecting an exit node does not make your device an exit node either.
 
 ## Installation
@@ -158,6 +164,12 @@ Andere Distributionen sind derzeit nicht offiziell unterstützt.
 - **Autostart:** Automatischer Start des Trays mit der Desktop-Sitzung.
 - **Updates und Backups:** Der Installer kann bestehende Tray-Versionen aktualisieren und zuvor installierte Dateien sichern.
 - **Deinstallation:** Separates Skript mit optionaler Löschung der angelegten Backups.
+
+### Screenshot
+
+![Tailscale Linux Tray](tailscale-tray-screenshot.png)
+
+*Tailscale Linux Tray unter KDE Plasma – deutsches Kontextmenü (Verbindung getrennt).*
 
 **Hinweis:** Die Option „Subnetz-Routen akzeptieren“ verwendet bereits von anderen Geräten angebotene Routen. Sie richtet **keinen eigenen Subnet-Router** ein. Ebenso wählt die Exit-Node-Funktion einen bestehenden Exit Node aus; sie macht den Laptop nicht selbst zum Exit Node.
 
