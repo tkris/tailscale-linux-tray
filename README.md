@@ -1,34 +1,27 @@
-# Tailscale Tray for Nobara Linux
+# Tailscale Tray für KDE Plasma
 
-Kleines PyQt6-System-Tray zum Verbinden/Trennen von Tailscale, mit Statusanzeige und grünem/rotem Symbol.
-
-## Voraussetzungen
-
-- Nobara Linux mit KDE Plasma und funktionierendem System-Tray
-- Python 3 mit PyQt6 (`sudo dnf install python3-qt6`, falls nicht vorhanden)
-- Bereits installiertes und eingerichtetes Tailscale (`tailscale` im PATH)
+Ein einfaches Tailscale-System-Tray mit PyQt6 für **Nobara/Fedora** und **CachyOS/Arch Linux** mit KDE Plasma.
 
 ## Installation
 
-Repository herunterladen oder klonen, dann im Repository-Ordner:
+Tailscale muss anschließend noch für den jeweiligen Benutzer angemeldet werden (`tailscale up`), falls das noch nicht erfolgt ist.
 
-```bash
-bash install.sh
-```
+1. Repository als ZIP herunterladen und entpacken oder mit Git klonen.
+2. Terminal im Projektordner öffnen.
+3. `bash install.sh` ausführen (nicht mit `sudo`).
 
-Der Installer prüft Voraussetzungen und installiert ausschließlich im Benutzerprofil:
+Der Installer erkennt die Distribution anhand von `/etc/os-release`, prüft KDE Plasma, Python 3, PyQt6 und Tailscale und fragt **vor** jeder Installation fehlender Pakete um Erlaubnis. Falls `tailscaled` nicht läuft, fragt er separat, ob er den Dienst mit `sudo systemctl enable --now tailscaled` aktivieren soll. Ohne Zustimmung werden keine Pakete installiert und kein Dienst gestartet.
 
-- `~/.local/share/tailscale-tray/tailscale-tray.py`
-- `~/.config/autostart/tailscale-tray.desktop`
+Die Anwendung wird nach `~/.local/share/tailscale-tray/` installiert, der Autostart nach `~/.config/autostart/tailscale-tray.desktop`. Das Tray startet beim nächsten KDE-Login. Es wird kein laufendes Tray beendet.
 
-Er verändert weder Tailscale-Konfiguration noch bestehende andere Tray-Installationen. Er startet das neue Tray nicht automatisch während der Installation; nach der nächsten Anmeldung startet es per KDE-Autostart. Zum Testen:
+**Hinweis:** Ein älteres Tray mit einem anderen Namen kann parallel starten. Vor einem produktiven Wechsel den alten Autostart separat deaktivieren. Die Installation wurde syntaktisch geprüft, aber noch nicht auf beiden Distributionen praktisch getestet. Bei distributionsabhängigen Paketquellen kann eine Paketinstallation fehlschlagen; der Installer meldet das dann.
 
-```bash
-python3 ~/.local/share/tailscale-tray/tailscale-tray.py
-```
+## Bedienung
 
-**Hinweis:** Linksklick verbindet oder trennt Tailscale sofort. Rechtsklick öffnet das Menü. Ein bereits laufendes anderes Tray sollte vor dem Testen beendet werden, damit es nicht zwei Symbole gibt.
+- Grün: Tailscale läuft; Rot: getrennt oder nicht verfügbar
+- Linksklick: verbinden/trennen
+- Rechtsklick: Status und Aktionen
 
-## Datenschutz
+## Sicherheit
 
-Keine Zugangsdaten im Repository hinterlegen. Tailscale-Authentifizierung erfolgt über die installierte Tailscale-CLI.
+Das Skript enthält keine fest hinterlegten Zugangsdaten. Der Installer fordert nur für Paketinstallation oder Dienstaktivierung `sudo` an.
