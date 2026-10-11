@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=SKYNET VPN
+Comment=Tailscale SKYNET Tray
+Exec=/usr/bin/python3 /home/tkris/.local/share/skynet-vpn/skynet-vpn.py
+Icon=network-vpn
+Terminal=false
+X-KDE-autostart-after=panel
