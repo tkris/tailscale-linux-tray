@@ -8,7 +8,7 @@
 
 Ein **Tailscale-System-Tray für Linux mit KDE Plasma und Cinnamon**. Es ermöglicht die komfortable Steuerung von Tailscale direkt über die Taskleiste – einschließlich Verbindungsstatus, Subnetz-Routen und Exit-Node-Auswahl.
 
-**Aktuelle Version:** v10.0.1 · **Oberfläche und Skriptmeldungen:** Deutsch/Englisch
+**Aktuelle Version:** v10.0.2 · **Oberfläche und Skriptmeldungen:** Deutsch/Englisch
 
 ## Unterstützte Systeme
 
@@ -45,7 +45,7 @@ cd tailscale-linux-tray
 bash install.sh
 ```
 
-Das Repository ist gegebenenfalls privat. In diesem Fall benötigst du eine GitHub-Anmeldung und die entsprechende Zugriffsberechtigung.
+Falls das Repository noch privat ist, benötigst du eine GitHub-Anmeldung und Zugriffsberechtigung.
 
 Alternativ kannst du das Projekt als ZIP von GitHub herunterladen, entpacken und im entpackten Ordner `bash install.sh` ausführen.
 
@@ -136,7 +136,7 @@ Dieses Projekt wurde mit Unterstützung von **OpenAI ChatGPT** entwickelt. KI wu
 
 A **Tailscale system tray for Linux desktops running KDE Plasma or Cinnamon**. It provides convenient access to Tailscale controls directly from the system tray, including connection status, subnet routes, and exit node selection.
 
-**Current version:** v10.0.1 · **UI and script messages:** German/English
+**Current version:** v10.0.2 · **UI and script messages:** German/English
 
 ## Supported systems
 
@@ -173,7 +173,7 @@ cd tailscale-linux-tray
 bash install.sh
 ```
 
-If the repository is private, you need a GitHub account with access to it.
+If the repository is still private, you need a GitHub account with access to it.
 
 Alternatively, download the repository as a ZIP file from GitHub, extract it, and run `bash install.sh` inside the extracted folder.
 
@@ -266,3 +266,24 @@ This project was developed with assistance from **OpenAI ChatGPT**. AI was used 
 **English:** Version 10 combines all changes since v9 into a single release: Linux Mint 22.1 Cinnamon with `apt` installer, automatic German/English localization for the tray and script messages, localized buttons in application-owned Qt dialogs, and proper line breaks in permission and error messages. Nobara KDE and CachyOS KDE remain supported. System Polkit dialogs are unchanged.
 
 **Teststatus / Test status:** Linux Mint installation, tray display and browser sign-in were successfully tested. The final combined v10 package and all VPN configuration features have not yet been fully regression-tested on all supported desktops.
+
+
+---
+
+## v10.0.2 – Vorbereitung für die öffentliche Veröffentlichung / Public release preparation
+
+**Deutsch**
+
+- MIT-Lizenz ergänzt (`LICENSE`, Copyright 2026 tkris). Bitte den Rechteinhaber vor der Veröffentlichung prüfen.
+- Nach erfolgreicher Operator-Autorisierung startet der Login-Versuch erneut, ohne die erste Bestätigungsfrage ein zweites Mal anzuzeigen.
+- Der Installer beendet beim Update nur Prozesse des eigenen Benutzers, bei denen ein Python-Interpreter das exakt installierte Tray-Skript als erstes Argument ausführt.
+- Vor der Veröffentlichung auch den **gesamten Git-Verlauf** auf Geheimnisse und persönliche Daten prüfen; ein Quellcode-ZIP enthält diesen Verlauf nicht.
+- Änderungen sind statisch geprüft, aber nicht auf allen unterstützten Desktops zur Laufzeit getestet.
+
+**English**
+
+- Added an MIT license (`LICENSE`, copyright 2026 tkris). Verify the copyright holder before publishing.
+- After successful operator authorization, login is retried without asking the initial confirmation question again.
+- During updates, the installer only stops processes owned by the current user where a Python interpreter executes the exact installed tray script as its first argument.
+- Before publishing, inspect the **entire Git history** for secrets and personal information; a source ZIP does not include that history.
+- Changes passed static checks but have not been runtime-tested on all supported desktops.

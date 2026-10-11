@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Simple Tailscale tray for Linux desktops supporting StatusNotifier."""
-APP_VERSION = "10.0.1"
+APP_VERSION = "10.0.2"
 import json
 import os
 import re
@@ -306,18 +306,19 @@ class TailscaleTray(QSystemTrayIcon):
     def disconnect_vpn(self):
         self.change_connection("down")
 
-    def start_login(self):
+    def start_login(self, ask_confirmation=True):
         if self.login_process is not None:
             return
-        answer = question_dialog(
-            None, tr('Tailscale – Ersteinrichtung', 'Tailscale – Initial setup'),
-            tr('Dieser Rechner ist noch nicht bei Tailscale angemeldet.\n\n', 'This computer is not signed in to Tailscale yet.\n\n')
-            + tr('Soll die Anmeldung gestartet werden? Ein Link wird im Browser geöffnet.', 'Start sign-in? A link will open in your browser.'),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.Yes
-        )
-        if answer != QMessageBox.StandardButton.Yes:
-            return
+        if ask_confirmation:
+            answer = question_dialog(
+                None, tr('Tailscale – Ersteinrichtung', 'Tailscale – Initial setup'),
+                tr('Dieser Rechner ist noch nicht bei Tailscale angemeldet.\n\n', 'This computer is not signed in to Tailscale yet.\n\n')
+                + tr('Soll die Anmeldung gestartet werden? Ein Link wird im Browser geöffnet.', 'Start sign-in? A link will open in your browser.'),
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes
+            )
+            if answer != QMessageBox.StandardButton.Yes:
+                return
         self.login_output = ""
         self.login_url = None
         self.login_dialog_shown = False
@@ -360,7 +361,7 @@ class TailscaleTray(QSystemTrayIcon):
             QMessageBox.information(None, "Tailscale", tr('Anmeldung erfolgreich – Tailscale ist verbunden.', 'Sign-in successful – Tailscale is connected.'))
         elif self.permission_denied(subprocess.CompletedProcess([], code, self.login_output, "")):
             if self.authorize_operator():
-                self.start_login()
+                self.start_login(ask_confirmation=False)
         else:
             QMessageBox.warning(None, tr('Tailscale – Anmeldung', 'Tailscale – Sign-in'),
                                 tr('Die Anmeldung wurde nicht abgeschlossen.\n\n', 'Sign-in was not completed.\n\n') + self.login_output[-2000:])

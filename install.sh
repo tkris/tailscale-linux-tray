@@ -33,19 +33,25 @@ confirm() {
   case "$answer" in j|J|ja|Ja|JA|y|Y|yes|Yes|YES) return 0;; *) return 1;; esac
 }
 
-# Only match this user's exact known Python script paths, not tailscaled or other trays.
+# Match only a Python interpreter executing this exact tray script as its first argument.
+# A coincidental script path in another program's command line must never trigger a kill.
+is_tray_pid() {
+  local pid="$1" target="$2" exe script
+  [[ -r "/proc/$pid/cmdline" ]] || return 1
+  [[ "$(stat -c %u "/proc/$pid" 2>/dev/null || true)" == "$EUID" ]] || return 1
+  local -a argv=()
+  mapfile -d '' -t argv < "/proc/$pid/cmdline" || return 1
+  ((${#argv[@]} >= 2)) || return 1
+  exe="${argv[0]}"; script="${argv[1]}"
+  case "${exe##*/}" in python|python[0-9]|python[0-9].[0-9]|python[0-9].[0-9][0-9]) ;; *) return 1 ;; esac
+  [[ "$script" == "$target" ]]
+}
 find_tray_pids() {
-  local target="$1" proc pid arg matched
+  local target="$1" proc pid
   FOUND_PIDS=()
   for proc in /proc/[0-9]*/cmdline; do
-    [[ -r "$proc" ]] || continue
     pid="${proc#/proc/}"; pid="${pid%/cmdline}"
-    [[ "$(stat -c %u "/proc/$pid" 2>/dev/null || true)" == "$EUID" ]] || continue
-    matched=0
-    while IFS= read -r -d '' arg; do
-      if [[ "$arg" == "$target" ]]; then matched=1; fi
-    done < "$proc" || true
-    ((matched)) && FOUND_PIDS+=("$pid")
+    if is_tray_pid "$pid" "$target"; then FOUND_PIDS+=("$pid"); fi
   done
 }
 
@@ -78,7 +84,7 @@ rollback() {
 }
 trap rollback ERR INT TERM EXIT
 
-printf '\n=== Tailscale Tray v10.0.1 – Linux Installer / Updater ===\n\n'
+printf '\n=== Tailscale Tray v10.0.2 – Linux Installer / Updater ===\n\n'
 [[ "$EUID" -ne 0 ]] || fail 'Nicht mit sudo ausführen.'
 [[ -f "$SOURCE_DIR/tailscale-tray.py" ]] || fail 'tailscale-tray.py fehlt.'
 [[ -f "$SOURCE_DIR/autostart/tailscale-tray.desktop" ]] || fail 'Autostart-Vorlage fehlt.'
@@ -165,7 +171,7 @@ pids=("${NEW_PIDS[@]}")
 if ((${#pids[@]})); then
   for pid in "${pids[@]}"; do
     [[ -r "/proc/$pid/cmdline" ]] || continue
-    if tr '\0' '\n' < "/proc/$pid/cmdline" | grep -Fxq -- "$NEW_PY"; then
+    if is_tray_pid "$pid" "$NEW_PY"; then
       kill -TERM -- "$pid" 2>/dev/null || true
     fi
   done
