@@ -35,9 +35,9 @@ Other distributions are not officially supported yet.
 
 ### Screenshot
 
-![Tailscale Linux Tray](tailscale-tray-screenshot.png)
+![Tailscale Linux Tray — English menu](tailscale-tray-eng-screenshot.png)
 
-*Tailscale Linux Tray on KDE Plasma — German context menu (disconnected).*
+*Tailscale Linux Tray on KDE Plasma — English context menu (disconnected).*
 
 **Note:** Accepting subnet routes allows the client to use routes advertised by other devices; it does **not** turn your device into a subnet router. Selecting an exit node does not make your device an exit node either.
 
@@ -167,7 +167,7 @@ Andere Distributionen sind derzeit nicht offiziell unterstützt.
 
 ### Screenshot
 
-![Tailscale Linux Tray](tailscale-tray-screenshot.png)
+![Tailscale Linux Tray – deutsches Menü](tailscale-tray-ger-screenshot.png)
 
 *Tailscale Linux Tray unter KDE Plasma – deutsches Kontextmenü (Verbindung getrennt).*
 
