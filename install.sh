@@ -65,7 +65,7 @@ rollback() {
 }
 trap rollback ERR INT TERM EXIT
 
-printf '\n=== Tailscale Tray v5 – KDE Installer / Updater ===\n\n'
+printf '\n=== Tailscale Tray v8 – KDE Installer / Updater ===\n\n'
 [[ "$EUID" -ne 0 ]] || fail 'Nicht mit sudo ausführen.'
 [[ -f "$SOURCE_DIR/tailscale-tray.py" ]] || fail 'tailscale-tray.py fehlt.'
 [[ -f "$SOURCE_DIR/autostart/tailscale-tray.desktop" ]] || fail 'Autostart-Vorlage fehlt.'
@@ -99,7 +99,9 @@ command -v tailscale >/dev/null || fail 'tailscale fehlt weiterhin.'
 
 printf '[3/7] Tailscale-Dienst prüfen ...\n'
 if systemctl is-active --quiet tailscaled; then printf '  tailscaled läuft ✓\n';
-elif confirm 'tailscaled ist inaktiv. Aktivieren und starten?'; then sudo systemctl enable --now tailscaled;
+elif confirm 'tailscaled ist inaktiv. Aktivieren und starten?'; then
+  sudo systemctl enable --now tailscaled || fail 'tailscaled konnte nicht gestartet werden. Bitte journalctl -u tailscaled -b prüfen.'
+  systemctl is-active --quiet tailscaled || fail 'tailscaled läuft nach dem Startversuch nicht. Bitte journalctl -u tailscaled -b prüfen.';
 else printf '  Dienst unverändert; Tray benötigt einen laufenden tailscaled.\n'; fi
 
 printf '[4/7] Bestehende Installation und Prozesse suchen ...\n'

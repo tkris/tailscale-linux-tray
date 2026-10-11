@@ -1,27 +1,29 @@
-# Tailscale Tray für KDE Plasma (v5)
+# Tailscale Tray v8
 
-Kleines Python/PyQt6-Tray für Tailscale mit Verbindungsstatus, Verbinden/Trennen und Statusanzeige.
+KDE-Plasma-Tray für Tailscale auf Nobara (dnf) und CachyOS (pacman).
 
-## Unterstützte Systeme
-- Nobara / Fedora mit KDE Plasma (`dnf`)
-- CachyOS / Arch mit KDE Plasma (`pacman`)
+## Neu in v8
+- Checkbox **Subnetz-Routen akzeptieren**, synchronisiert mit der echten Tailscale-Einstellung `RouteAll` (`tailscale debug prefs`).
+- Untermenü **Exit Node**: `Keinen Exit Node verwenden` oder einen von Tailscale als Exit Node angebotenen Peer auswählen.
+- Die Auswahl verwendet `tailscale set --exit-node=<Node-ID>` bzw. `tailscale set --exit-node=`; kein eigener Exit Node wird angeboten.
+- Bei fehlenden Rechten bleibt die Einwilligung + KDE-Polkit-Freigabe aus v6 erhalten.
+- Einrichtungs-/Browser-Login aus v7 bleibt erhalten.
+- Installer ohne SKYNET-Migration, mit Backup und Update-Unterstützung.
 
-Linux Mint / Cinnamon ist derzeit nicht unterstützt.
-
-## Installation und Updates
+## Installation / Update
+Entpacken und als normaler Benutzer im Projektordner ausführen:
 
 ```bash
 bash install.sh
 ```
 
-**Nicht mit `sudo` starten.** Der Installer prüft Abhängigkeiten und fragt vor der Installation fehlender Systempakete bzw. dem Start des Tailscale-Dienstes. Die Installation des Trays erfolgt im Benutzerprofil.
+## Hinweise
+- Die verfügbaren Exit Nodes werden aus `tailscale status --json` gelesen (`Peer[].ExitNodeOption`).
+- Die gesetzten Optionen werden aus `tailscale debug prefs` gelesen (`RouteAll`, `ExitNodeID`). Wenn Einstellungen nicht lesbar sind, bleibt die Checkbox deaktiviert bzw. das Exit-Node-Menü zeigt einen Hinweis.
+- Ein Exit Node muss im Tailnet bereits bereitgestellt und freigegeben sein.
+- Beim Auswählen eines Exit Nodes wird der Internetverkehr über diesen Knoten geleitet. Eine lokale LAN-Freigabe (`--exit-node-allow-lan-access`) wird nicht automatisch verändert.
+- Unter KDE muss ein grafischer Polkit-Agent laufen, um Administratorrechte anzufordern.
+- Tests auf echter Hardware stehen für v8 noch aus.
 
-Bei Updates erkennt der Installer ausschließlich die neutrale Tailscale-Tray-Installation unter `~/.local/share/tailscale-tray/` und ihren KDE-Autostart unter `~/.config/autostart/tailscale-tray.desktop`. Er fragt vor Updates, sichert vorhandene Dateien in `~/.local/share/tailscale-tray-backups/`, beendet erkannte eigene Tray-Instanzen kontrolliert und bietet den Neustart an.
-
-**v5 enthält keine Erkennung oder Migration früherer individuell benannter Trays.** Solche Autostarts müssen bei Bedarf separat manuell deaktiviert werden.
-
-Bei Installationsfehlern werden die gesicherten Dateien zurückgespielt. Zuvor beendete Tray-Prozesse werden dabei nicht automatisch neu gestartet. Änderungen an Systempaketen oder am Tailscale-Dienst werden nicht zurückgenommen.
-
-## Teststatus
-
-Die v4-Migration wurde auf Nobara 44 erfolgreich ausgeführt. Die v5-Update-Routine ist noch nicht praktisch getestet, ebenso CachyOS. Der Installer wurde auf Bash-Syntax und das Python-Skript auf Syntax geprüft.
+## Enthalten
+`install.sh`, `tailscale-tray.py`, `autostart/tailscale-tray.desktop`, `README.md`.
