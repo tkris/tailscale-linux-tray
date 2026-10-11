@@ -6,7 +6,7 @@
 
 ## Deutsch
 
-Ein leichtgewichtiges **Tailscale-System-Tray für Linux mit KDE Plasma und Cinnamon**. Es ermöglicht, Tailscale direkt über die Taskleiste zu steuern – einschließlich Verbindungsstatus, Subnetz-Routen und Exit-Node-Auswahl.
+Ein **Tailscale-System-Tray für Linux mit KDE Plasma und Cinnamon**. Es ermöglicht die komfortable Steuerung von Tailscale direkt über die Taskleiste – einschließlich Verbindungsstatus, Subnetz-Routen und Exit-Node-Auswahl.
 
 **Aktuelle Version:** v10 · **Oberfläche und Skriptmeldungen:** Deutsch/Englisch
 
@@ -134,7 +134,7 @@ Dieses Projekt wurde mit Unterstützung von **OpenAI ChatGPT** entwickelt. KI wu
 
 ## English
 
-A lightweight **Tailscale system tray for Linux with KDE Plasma and Cinnamon**. Control Tailscale directly from your desktop panel, including connection status, subnet routes, and exit-node selection.
+A **Tailscale system tray for Linux desktops running KDE Plasma or Cinnamon**. It provides convenient access to Tailscale controls directly from the system tray, including connection status, subnet routes, and exit node selection.
 
 **Current version:** v10 · **UI and script messages:** German/English
 
