@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Simple Tailscale tray for Linux desktops supporting StatusNotifier."""
+APP_VERSION = "4.0.0"
 import json
 import shutil
 import subprocess

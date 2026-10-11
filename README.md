@@ -1,27 +1,33 @@
-# Tailscale Tray für KDE Plasma
+# Tailscale Tray für KDE Plasma (v4)
 
-Ein einfaches Tailscale-System-Tray mit PyQt6 für **Nobara/Fedora** und **CachyOS/Arch Linux** mit KDE Plasma.
+Ein kleines Python/PyQt6-Tray für Tailscale mit Verbindungsstatus, Verbinden/Trennen und Statusanzeige.
+
+## Unterstützte Systeme
+- Nobara / Fedora mit KDE Plasma (`dnf`)
+- CachyOS / Arch mit KDE Plasma (`pacman`)
+
+Linux Mint / Cinnamon ist noch nicht getestet und wird derzeit nicht unterstützt.
 
 ## Installation
 
-Tailscale muss anschließend noch für den jeweiligen Benutzer angemeldet werden (`tailscale up`), falls das noch nicht erfolgt ist.
+Im entpackten Projektordner ein Terminal öffnen:
 
-1. Repository als ZIP herunterladen und entpacken oder mit Git klonen.
-2. Terminal im Projektordner öffnen.
-3. `bash install.sh` ausführen (nicht mit `sudo`).
+```bash
+bash install.sh
+```
 
-Der Installer erkennt die Distribution anhand von `/etc/os-release`, prüft KDE Plasma, Python 3, PyQt6 und Tailscale und fragt **vor** jeder Installation fehlender Pakete um Erlaubnis. Falls `tailscaled` nicht läuft, fragt er separat, ob er den Dienst mit `sudo systemctl enable --now tailscaled` aktivieren soll. Ohne Zustimmung werden keine Pakete installiert und kein Dienst gestartet.
+**Nicht mit `sudo` starten.** Fehlende Systempakete und ein inaktiver `tailscaled`-Dienst werden erkannt; vor Systemänderungen wird gefragt. Für die Tray-Installation wird kein Root benötigt.
 
-Die Anwendung wird nach `~/.local/share/tailscale-tray/` installiert, der Autostart nach `~/.config/autostart/tailscale-tray.desktop`. Das Tray startet beim nächsten KDE-Login. Es wird kein laufendes Tray beendet.
+## Updates und Migration
 
-**Hinweis:** Ein älteres Tray mit einem anderen Namen kann parallel starten. Vor einem produktiven Wechsel den alten Autostart separat deaktivieren. Die Installation wurde syntaktisch geprüft, aber noch nicht auf beiden Distributionen praktisch getestet. Bei distributionsabhängigen Paketquellen kann eine Paketinstallation fehlschlagen; der Installer meldet das dann.
+Der Installer prüft vorhandene `tailscale-tray.py`- und ältere `skynet-vpn.py`-Installationen sowie deren Autostart-Dateien und laufende Prozesse. Er fragt vor einem Update oder der Migration. Er sichert vorhandene Dateien unter `~/.local/share/tailscale-tray-backups/`, beendet nur erkannte Instanzen dieser beiden Skriptpfade und richtet den neuen Autostart ein. Die alte `skynet-vpn.py` bleibt als lokale Rückfallkopie erhalten; bei bestätigter Migration wird nur ihr Autostart entfernt.
 
-## Bedienung
+Das neue Tray kann auf Wunsch direkt gestartet werden. Der Installer beendet **nicht** den Tailscale-Dienst und verwendet kein `killall` oder `pkill`.
 
-- Grün: Tailscale läuft; Rot: getrennt oder nicht verfügbar
-- Linksklick: verbinden/trennen
-- Rechtsklick: Status und Aktionen
+**Hinweis:** Ein Dateifehler führt zur Wiederherstellung der gesicherten Dateien. Bereits beendete Tray-Prozesse werden bei einem Fehler nicht automatisch wieder gestartet. Änderungen an Systempaketen und dem `tailscaled`-Dienst werden nicht rückgängig gemacht.
 
-## Sicherheit
+## Sicherheit und Teststatus
 
-Das Skript enthält keine fest hinterlegten Zugangsdaten. Der Installer fordert nur für Paketinstallation oder Dienstaktivierung `sudo` an.
+Die Bash- und Python-Syntax wurde geprüft. Ein vollständiger Lauf auf Nobara und CachyOS ist noch erforderlich. Bitte zunächst auf einem Testsystem testen oder die Dateien sichern.
+
+Das Tray ruft `tailscale up`, `tailscale down` und `tailscale status` auf; Tailscale selbst muss installiert und eingerichtet sein.
