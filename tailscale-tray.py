@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Simple Tailscale tray for Linux desktops supporting StatusNotifier."""
-APP_VERSION = "8.0.0"
+APP_VERSION = "9.0.0"
 import json
+import os
 import re
 import getpass
 import shutil
@@ -10,6 +11,23 @@ import sys
 from PyQt6.QtCore import QTimer, QProcess, QUrl
 from PyQt6.QtGui import QAction, QIcon, QPixmap, QPainter, QColor, QDesktopServices
 from PyQt6.QtWidgets import QApplication, QMenu, QMessageBox, QSystemTrayIcon
+
+
+def language():
+    # KDE/Qt may expose a preferred UI language separately from LANG.
+    for key in ("LANGUAGE", "LC_ALL", "LC_MESSAGES", "LANG"):
+        value = os.environ.get(key, "").strip()
+        if value:
+            first = value.split(":", 1)[0].split(".", 1)[0].split("@", 1)[0]
+            return "de" if first.lower().split("_", 1)[0] == "de" else "en"
+    return "en"
+
+
+LANGUAGE = language()
+
+
+def tr(de, en):
+    return de if LANGUAGE == "de" else en
 
 
 def run(*args):
@@ -23,17 +41,17 @@ class TailscaleTray(QSystemTrayIcon):
     def __init__(self):
         super().__init__()
         self.menu = QMenu()
-        self.status_action = QAction("Status wird geprüft …")
+        self.status_action = QAction(tr('Status wird geprüft …', 'Checking status …'))
         self.status_action.setEnabled(False)
-        self.connect_action = QAction("Tailscale verbinden")
-        self.disconnect_action = QAction("Tailscale trennen")
-        self.routes_action = QAction("Subnetz-Routen akzeptieren")
+        self.connect_action = QAction(tr('Tailscale verbinden', 'Connect Tailscale'))
+        self.disconnect_action = QAction(tr('Tailscale trennen', 'Disconnect Tailscale'))
+        self.routes_action = QAction(tr('Subnetz-Routen akzeptieren', 'Accept subnet routes'))
         self.routes_action.setCheckable(True)
         self.routes_action.triggered.connect(self.toggle_routes)
         self.exit_menu = QMenu("Exit Node")
         self.exit_menu.aboutToShow.connect(self.refresh_exit_menu)
-        self.show_status_action = QAction("Tailscale-Status anzeigen")
-        self.quit_action = QAction("Tray beenden")
+        self.show_status_action = QAction(tr('Tailscale-Status anzeigen', 'Show Tailscale status'))
+        self.quit_action = QAction(tr('Tray beenden', 'Quit tray'))
         self.connect_action.triggered.connect(self.connect_vpn)
         self.disconnect_action.triggered.connect(self.disconnect_vpn)
         self.show_status_action.triggered.connect(self.show_status)
@@ -89,14 +107,14 @@ class TailscaleTray(QSystemTrayIcon):
 
     def update_status(self):
         state = self.backend_state()
-        labels = {"Running": "Verbunden", "NeedsLogin": "Nicht angemeldet",
-                  "Stopped": "Getrennt", "Starting": "Wird gestartet"}
-        label = labels.get(state, "Status unbekannt")
+        labels = {"Running": tr('Verbunden', 'Connected'), "NeedsLogin": tr('Nicht angemeldet', 'Not signed in'),
+                  "Stopped": tr('Getrennt', 'Disconnected'), "Starting": tr('Wird gestartet', 'Starting')}
+        label = labels.get(state, tr('Status unbekannt', 'Status unknown'))
         self.setIcon(self.status_icon(state))
         self.setToolTip("Tailscale – " + label)
         self.status_action.setText("● Tailscale: " + label)
         busy = self.login_process is not None
-        self.connect_action.setText("Tailscale einrichten / anmelden" if state == "NeedsLogin" else "Tailscale verbinden")
+        self.connect_action.setText(tr('Tailscale einrichten / anmelden', 'Set up / sign in to Tailscale') if state == "NeedsLogin" else tr('Tailscale verbinden', 'Connect Tailscale'))
         self.connect_action.setEnabled(state != "Running" and not busy)
         self.disconnect_action.setEnabled(state == "Running" and not busy)
 
@@ -126,7 +144,7 @@ class TailscaleTray(QSystemTrayIcon):
         self.routes_action.setEnabled(isinstance(route_all, bool))
         self.routes_action.setToolTip(
             "" if isinstance(route_all, bool)
-            else "Einstellung konnte nicht ausgelesen werden"
+            else tr('Einstellung konnte nicht ausgelesen werden', 'Could not read setting')
         )
         self.routes_action.blockSignals(False)
 
@@ -139,8 +157,8 @@ class TailscaleTray(QSystemTrayIcon):
                 return False
         if result.returncode != 0:
             QMessageBox.warning(
-                None, "Tailscale – Einstellungen",
-                result.stderr or result.stdout or "Einstellung fehlgeschlagen"
+                None, tr('Tailscale – Einstellungen', 'Tailscale – Settings'),
+                result.stderr or result.stdout or tr('Einstellung fehlgeschlagen', 'Failed to change setting')
             )
             return False
         self.update_status()
@@ -155,7 +173,7 @@ class TailscaleTray(QSystemTrayIcon):
         data = self.status_data()
         prefs = self.prefs_data()
         if not data or not prefs:
-            action = self.exit_menu.addAction("Exit Nodes nicht verfügbar")
+            action = self.exit_menu.addAction(tr('Exit Nodes nicht verfügbar', 'Exit nodes unavailable'))
             action.setEnabled(False)
             return
 
@@ -163,7 +181,7 @@ class TailscaleTray(QSystemTrayIcon):
         # ExitNodeStatus is a fallback for older/newer preference layouts.
         if not selected_id and isinstance(data.get("ExitNodeStatus"), dict):
             selected_id = data["ExitNodeStatus"].get("ID", "")
-        no_exit = self.exit_menu.addAction("Keinen Exit Node verwenden")
+        no_exit = self.exit_menu.addAction(tr('Keinen Exit Node verwenden', 'Do not use an exit node'))
         no_exit.setCheckable(True)
         no_exit.setChecked(not bool(selected_id))
         no_exit.triggered.connect(lambda _=False: self.select_exit_node(""))
@@ -189,7 +207,7 @@ class TailscaleTray(QSystemTrayIcon):
             )
         if not eligible:
             self.exit_menu.addSeparator()
-            action = self.exit_menu.addAction("Keine Exit Nodes verfügbar")
+            action = self.exit_menu.addAction(tr('Keine Exit Nodes verfügbar', 'No exit nodes available'))
             action.setEnabled(False)
 
     def select_exit_node(self, node_id):
@@ -205,18 +223,18 @@ class TailscaleTray(QSystemTrayIcon):
     def authorize_operator(self):
         if not shutil.which("pkexec"):
             QMessageBox.warning(
-                None, "Tailscale – Berechtigung",
-                "Die Polkit-Anwendung pkexec fehlt.\\n"
-                'Bitte einmal im Terminal ausführen:\\nsudo tailscale set --operator="$USER"'
+                None, tr('Tailscale – Berechtigung', 'Tailscale – Permissions'),
+                tr('Die Polkit-Anwendung pkexec fehlt.\\n', 'The Polkit application pkexec is missing.\\n')
+                + tr('Bitte einmal im Terminal ausführen:\\nsudo tailscale set --operator="$USER"', 'Run this once in a terminal:\\nsudo tailscale set --operator="$USER"')
             )
             return False
         username = getpass.getuser()
         answer = QMessageBox.question(
-            None, "Tailscale – Berechtigung",
-            "Dein Benutzer darf die Tailscale-Verbindung noch nicht steuern.\\n\\n"
-            "Soll einmalig eine Administratorfreigabe über den Systemdialog "
-            "angefordert werden?\\n\\n"
-            f"Der Benutzer {username} wird als Tailscale-Operator eingerichtet.",
+            None, tr('Tailscale – Berechtigung', 'Tailscale – Permissions'),
+            tr('Dein Benutzer darf die Tailscale-Verbindung noch nicht steuern.\\n\\n', 'Your user cannot control the Tailscale connection yet.\\n\\n')
+            + tr('Soll einmalig eine Administratorfreigabe über den Systemdialog ', 'Request one-time administrator authorization through the system dialog ')
+            + tr('angefordert werden?\\n\\n', '?\\n\\n')
+            + tr(f"Der Benutzer {username} wird als Tailscale-Operator eingerichtet.", f"User {username} will be configured as a Tailscale operator."),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No
         )
@@ -228,13 +246,13 @@ class TailscaleTray(QSystemTrayIcon):
                 text=True, capture_output=True, timeout=120
             )
         except (OSError, subprocess.TimeoutExpired) as exc:
-            QMessageBox.warning(None, "Tailscale – Berechtigung", str(exc))
+            QMessageBox.warning(None, tr('Tailscale – Berechtigung', 'Tailscale – Permissions'), str(exc))
             return False
         if result.returncode != 0:
             QMessageBox.warning(
-                None, "Tailscale – Berechtigung",
-                "Administratorfreigabe fehlgeschlagen oder abgebrochen.\\n\\n"
-                + (result.stderr or result.stdout or "Keine Details verfügbar.")
+                None, tr('Tailscale – Berechtigung', 'Tailscale – Permissions'),
+                tr('Administratorfreigabe fehlgeschlagen oder abgebrochen.\\n\\n', 'Administrator authorization failed or was canceled.\\n\\n')
+                + (result.stderr or result.stdout or tr('Keine Details verfügbar.', 'No details available.'))
             )
             return False
         return True
@@ -250,7 +268,7 @@ class TailscaleTray(QSystemTrayIcon):
         if result.returncode != 0:
             QMessageBox.warning(
                 None, "Tailscale",
-                result.stderr or result.stdout or "Aktion fehlgeschlagen"
+                result.stderr or result.stdout or tr('Aktion fehlgeschlagen', 'Action failed')
             )
         self.update_status()
 
@@ -269,9 +287,9 @@ class TailscaleTray(QSystemTrayIcon):
         if self.login_process is not None:
             return
         answer = QMessageBox.question(
-            None, "Tailscale – Ersteinrichtung",
-            "Dieser Rechner ist noch nicht bei Tailscale angemeldet.\n\n"
-            "Soll die Anmeldung gestartet werden? Ein Link wird im Browser geöffnet.",
+            None, tr('Tailscale – Ersteinrichtung', 'Tailscale – Initial setup'),
+            tr('Dieser Rechner ist noch nicht bei Tailscale angemeldet.\n\n', 'This computer is not signed in to Tailscale yet.\n\n')
+            + tr('Soll die Anmeldung gestartet werden? Ein Link wird im Browser geöffnet.', 'Start sign-in? A link will open in your browser.'),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.Yes
         )
@@ -305,10 +323,10 @@ class TailscaleTray(QSystemTrayIcon):
             QDesktopServices.openUrl(QUrl(self.login_url))
             self.login_dialog_shown = True
             QMessageBox.information(
-                None, "Tailscale – Anmeldung",
-                "Der Anmeldelink wurde im Browser geöffnet.\n\n"
-                "Bitte melde dich dort bei deinem Tailscale-Account an.\n\n"
-                "Falls sich der Browser nicht öffnet, kopiere diesen Link:\n" + self.login_url
+                None, tr('Tailscale – Anmeldung', 'Tailscale – Sign-in'),
+                tr('Der Anmeldelink wurde im Browser geöffnet.\n\n', 'The sign-in link was opened in your browser.\n\n')
+                + tr('Bitte melde dich dort bei deinem Tailscale-Account an.\n\n', 'Please sign in to your Tailscale account there.\n\n')
+                + tr('Falls sich der Browser nicht öffnet, kopiere diesen Link:\n', 'If the browser does not open, copy this link:\n') + self.login_url
             )
 
     def login_finished(self, code, _status):
@@ -316,24 +334,24 @@ class TailscaleTray(QSystemTrayIcon):
         self.login_process = None
         self.update_status()
         if self.backend_state() == "Running":
-            QMessageBox.information(None, "Tailscale", "Anmeldung erfolgreich – Tailscale ist verbunden.")
+            QMessageBox.information(None, "Tailscale", tr('Anmeldung erfolgreich – Tailscale ist verbunden.', 'Sign-in successful – Tailscale is connected.'))
         elif self.permission_denied(subprocess.CompletedProcess([], code, self.login_output, "")):
             if self.authorize_operator():
                 self.start_login()
         else:
-            QMessageBox.warning(None, "Tailscale – Anmeldung",
-                                "Die Anmeldung wurde nicht abgeschlossen.\n\n" + self.login_output[-2000:])
+            QMessageBox.warning(None, tr('Tailscale – Anmeldung', 'Tailscale – Sign-in'),
+                                tr('Die Anmeldung wurde nicht abgeschlossen.\n\n', 'Sign-in was not completed.\n\n') + self.login_output[-2000:])
 
     def login_error(self, _error):
         if self.login_process is not None and self.login_process.state() == QProcess.ProcessState.NotRunning:
             self.login_read_output()
             self.login_process = None
             self.update_status()
-            QMessageBox.warning(None, "Tailscale", "Der Anmeldeprozess konnte nicht gestartet werden.")
+            QMessageBox.warning(None, "Tailscale", tr('Der Anmeldeprozess konnte nicht gestartet werden.', 'Could not start the sign-in process.'))
 
     def show_status(self):
         result = run("status")
-        QMessageBox.information(None, "Tailscale-Status", result.stdout or result.stderr or "Kein Status verfügbar")
+        QMessageBox.information(None, tr('Tailscale-Status', 'Tailscale status'), result.stdout or result.stderr or tr('Kein Status verfügbar', 'No status available'))
 
     def clicked(self, reason):
         if reason == QSystemTrayIcon.ActivationReason.Trigger:
@@ -345,12 +363,12 @@ class TailscaleTray(QSystemTrayIcon):
 
 def main():
     if not shutil.which("tailscale"):
-        print("Fehler: Tailscale ist nicht installiert.", file=sys.stderr)
+        print(tr('Fehler: Tailscale ist nicht installiert.', 'Error: Tailscale is not installed.'), file=sys.stderr)
         return 1
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
     if not QSystemTrayIcon.isSystemTrayAvailable():
-        print("Fehler: Kein System-Tray verfügbar.", file=sys.stderr)
+        print(tr('Fehler: Kein System-Tray verfügbar.', 'Error: No system tray available.'), file=sys.stderr)
         return 1
     tray = TailscaleTray()
     return app.exec()

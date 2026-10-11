@@ -1,6 +1,19 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+# Use the desktop session's preferred language (German or English fallback).
+for locale_key in LANGUAGE LC_ALL LC_MESSAGES LANG; do
+  locale_value="${!locale_key:-}"
+  if [[ -n "$locale_value" ]]; then break; fi
+done
+locale_value="${locale_value%%:*}"
+locale_value="${locale_value%%.*}"
+locale_value="${locale_value%%@*}"
+if [[ "${locale_value,,}" != de* ]]; then
+  exec bash "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/lang/uninstall.sh" "$@"
+fi
+
+
 APP_DIR="$HOME/.local/share/tailscale-tray"
 APP_FILE="$APP_DIR/tailscale-tray.py"
 AUTOSTART_FILE="$HOME/.config/autostart/tailscale-tray.desktop"

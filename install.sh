@@ -1,6 +1,19 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+# Use the desktop session's preferred language (German or English fallback).
+for locale_key in LANGUAGE LC_ALL LC_MESSAGES LANG; do
+  locale_value="${!locale_key:-}"
+  if [[ -n "$locale_value" ]]; then break; fi
+done
+locale_value="${locale_value%%:*}"
+locale_value="${locale_value%%.*}"
+locale_value="${locale_value%%@*}"
+if [[ "${locale_value,,}" != de* ]]; then
+  exec bash "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/lang/install.sh" "$@"
+fi
+
+
 SOURCE_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$HOME/.local/share/tailscale-tray"
 AUTOSTART_DIR="$HOME/.config/autostart"
@@ -65,7 +78,7 @@ rollback() {
 }
 trap rollback ERR INT TERM EXIT
 
-printf '\n=== Tailscale Tray v8 – KDE Installer / Updater ===\n\n'
+printf '\n=== Tailscale Tray v9 – KDE Installer / Updater ===\n\n'
 [[ "$EUID" -ne 0 ]] || fail 'Nicht mit sudo ausführen.'
 [[ -f "$SOURCE_DIR/tailscale-tray.py" ]] || fail 'tailscale-tray.py fehlt.'
 [[ -f "$SOURCE_DIR/autostart/tailscale-tray.desktop" ]] || fail 'Autostart-Vorlage fehlt.'

@@ -8,7 +8,7 @@
 
 Ein leichtgewichtiges **Tailscale-System-Tray für Linux mit KDE Plasma**. Es ermöglicht, Tailscale direkt über die Taskleiste zu steuern – einschließlich Verbindungsstatus, Subnetz-Routen und Exit-Node-Auswahl.
 
-**Aktueller Entwicklungsstand:** v8 · **Sprache der Oberfläche:** Deutsch
+**Aktueller Entwicklungsstand:** v9 · **Sprachen:** Deutsch und Englisch (automatische Erkennung)
 
 ## Unterstützte Systeme
 
@@ -33,6 +33,12 @@ Weitere Distributionen und Linux Mint Cinnamon sind derzeit nicht offiziell unte
 - **Deinstallation:** Separates Skript mit optionaler Löschung der angelegten Backups.
 
 **Hinweis:** Die Option „Subnetz-Routen akzeptieren“ verwendet bereits von anderen Geräten angebotene Routen. Sie richtet **keinen eigenen Subnet-Router** ein. Ebenso wählt die Exit-Node-Funktion einen bestehenden Exit Node aus; sie macht den Laptop nicht selbst zum Exit Node.
+
+## Sprache / Language
+
+Das Tray und die Ausgaben von `install.sh` und `uninstall.sh` verwenden automatisch Deutsch bei einer deutschen Linux-Spracheinstellung und ansonsten Englisch. Berücksichtigt werden `LANGUAGE`, `LC_ALL`, `LC_MESSAGES` und `LANG` (in dieser Reihenfolge). Die Ausgabe externer Werkzeuge wie `dnf`, `pacman`, `systemctl` oder `tailscale` hängt weiterhin von diesen Programmen ab.
+
+Zum Testen kannst du beispielsweise `LANGUAGE=en_US LANG=en_US.UTF-8 bash install.sh` verwenden. Für das Tray gilt entsprechend `LANGUAGE=en_US /usr/bin/python3 tailscale-tray.py`.
 
 ## Installation
 
@@ -112,6 +118,9 @@ tailscale-linux-tray/
 ├── README.md
 ├── install.sh
 ├── uninstall.sh
+├── lang/
+│   ├── install.sh
+│   └── uninstall.sh
 ├── tailscale-tray.py
 └── autostart/
     └── tailscale-tray.desktop
@@ -135,7 +144,7 @@ Dieses Projekt wurde mit Unterstützung von **OpenAI ChatGPT** entwickelt. KI wu
 
 A lightweight **Tailscale system tray for Linux with KDE Plasma**. Control Tailscale directly from your desktop panel, including connection status, subnet routes, and exit-node selection.
 
-**Current development version:** v8 · **Application UI language:** German
+**Current development version:** v9 · **Languages:** German and English (automatically detected)
 
 ## Supported systems
 
@@ -160,6 +169,12 @@ Other distributions and Linux Mint Cinnamon are not officially supported yet.
 - **Uninstallation:** Dedicated script with optional deletion of backups.
 
 **Note:** Accepting subnet routes allows the client to use routes advertised by other devices; it does **not** turn your device into a subnet router. Selecting an exit node does not make your device an exit node either.
+
+## Language
+
+The tray interface and the messages from `install.sh` and `uninstall.sh` automatically use German for German Linux locales and English otherwise. Locale precedence is `LANGUAGE`, `LC_ALL`, `LC_MESSAGES`, then `LANG`. Output from external tools such as `dnf`, `pacman`, `systemctl`, or `tailscale` remains controlled by those tools.
+
+To test English output, run `LANGUAGE=en_US LANG=en_US.UTF-8 bash install.sh`. For the tray, use `LANGUAGE=en_US /usr/bin/python3 tailscale-tray.py`.
 
 ## Installation
 
@@ -239,6 +254,9 @@ tailscale-linux-tray/
 ├── README.md
 ├── install.sh
 ├── uninstall.sh
+├── lang/
+│   ├── install.sh
+│   └── uninstall.sh
 ├── tailscale-tray.py
 └── autostart/
     └── tailscale-tray.desktop
