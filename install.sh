@@ -6,13 +6,10 @@ APP_DIR="$HOME/.local/share/tailscale-tray"
 AUTOSTART_DIR="$HOME/.config/autostart"
 NEW_PY="$APP_DIR/tailscale-tray.py"
 NEW_DESKTOP="$AUTOSTART_DIR/tailscale-tray.desktop"
-OLD_PY="$HOME/.local/share/skynet-vpn/skynet-vpn.py"
-OLD_DESKTOP="$AUTOSTART_DIR/skynet-vpn.desktop"
 PYTHON_BIN=/usr/bin/python3
 BACKUP_DIR=""
 CHANGES_STARTED=0
 COMMITTED=0
-OLD_PIDS=()
 NEW_PIDS=()
 
 fail() { printf '\nFEHLER: %s\n' "$*" >&2; exit 1; }
@@ -62,15 +59,13 @@ rollback() {
     printf '\nInstallation fehlgeschlagen: bisherige Dateien werden wiederhergestellt ...\n' >&2
     restore_file "$NEW_PY" new/tailscale-tray.py
     restore_file "$NEW_DESKTOP" new/tailscale-tray.desktop
-    restore_file "$OLD_PY" old/skynet-vpn.py
-    restore_file "$OLD_DESKTOP" old/skynet-vpn.desktop
     printf 'Dateien wiederhergestellt. Zuvor beendete Tray-Prozesse bitte ggf. manuell neu starten.\n' >&2
   fi
   exit "$code"
 }
 trap rollback ERR INT TERM EXIT
 
-printf '\n=== Tailscale Tray v4 – KDE Installer / Updater ===\n\n'
+printf '\n=== Tailscale Tray v5 – KDE Installer / Updater ===\n\n'
 [[ "$EUID" -ne 0 ]] || fail 'Nicht mit sudo ausführen.'
 [[ -f "$SOURCE_DIR/tailscale-tray.py" ]] || fail 'tailscale-tray.py fehlt.'
 [[ -f "$SOURCE_DIR/autostart/tailscale-tray.desktop" ]] || fail 'Autostart-Vorlage fehlt.'
@@ -114,22 +109,9 @@ if [[ -f "$NEW_PY" ]]; then
   printf '  Erkannte Version: %s\n' "${current_version:-unbekannt (ältere Version)}"
 fi
 [[ -f "$NEW_DESKTOP" ]] && printf '  Neuer Autostart vorhanden: %s\n' "$NEW_DESKTOP"
-[[ -f "$OLD_PY" ]] && printf '  SKYNET-Altversion vorhanden: %s\n' "$OLD_PY"
-[[ -f "$OLD_DESKTOP" ]] && printf '  SKYNET-Autostart vorhanden: %s\n' "$OLD_DESKTOP"
 find_tray_pids "$NEW_PY"; NEW_PIDS=("${FOUND_PIDS[@]}")
-find_tray_pids "$OLD_PY"; OLD_PIDS=("${FOUND_PIDS[@]}")
-printf '  Laufende neue Instanzen: %s | SKYNET-Instanzen: %s\n' "${#NEW_PIDS[@]}" "${#OLD_PIDS[@]}"
+printf '  Laufende Tailscale-Tray-Instanzen: %s\n' "${#NEW_PIDS[@]}"
 
-MIGRATE=0
-if [[ -f "$OLD_PY" || -f "$OLD_DESKTOP" || ${#OLD_PIDS[@]} -gt 0 ]]; then
-  if confirm 'Alte SKYNET-Version sichern, beenden und Autostart entfernen?'; then MIGRATE=1;
-  else
-    printf '  SKYNET bleibt unverändert.\n'
-    if [[ -f "$OLD_DESKTOP" || ${#OLD_PIDS[@]} -gt 0 ]]; then
-      fail 'Abbruch: Zwei parallel laufende Trays/Autostarts werden vermieden.'
-    fi
-  fi
-fi
 if [[ -f "$NEW_PY" || -f "$NEW_DESKTOP" || ${#NEW_PIDS[@]} -gt 0 ]]; then
   confirm 'Bestehendes Tailscale Tray aktualisieren und ggf. neu starten?' || fail 'Update abgebrochen.'
 fi
@@ -139,16 +121,16 @@ BACKUP_DIR="$HOME/.local/share/tailscale-tray-backups/$(date +%Y%m%d-%H%M%S)-$$"
 mkdir -p -- "$BACKUP_DIR"
 backup_file "$NEW_PY" new/tailscale-tray.py
 backup_file "$NEW_DESKTOP" new/tailscale-tray.desktop
-if ((MIGRATE)); then
-  backup_file "$OLD_PY" old/skynet-vpn.py
-  backup_file "$OLD_DESKTOP" old/skynet-vpn.desktop
-fi
 printf '  Backup: %s\n' "$BACKUP_DIR"
 CHANGES_STARTED=1
 pids=("${NEW_PIDS[@]}")
-if ((MIGRATE)); then pids+=("${OLD_PIDS[@]}"); fi
 if ((${#pids[@]})); then
-  kill -TERM -- "${pids[@]}" 2>/dev/null || true
+  for pid in "${pids[@]}"; do
+    [[ -r "/proc/$pid/cmdline" ]] || continue
+    if tr '\0' '\n' < "/proc/$pid/cmdline" | grep -Fxq -- "$NEW_PY"; then
+      kill -TERM -- "$pid" 2>/dev/null || true
+    fi
+  done
   for _ in 1 2 3 4 5; do
     alive=0
     for pid in "${pids[@]}"; do kill -0 "$pid" 2>/dev/null && alive=1; done
@@ -174,10 +156,6 @@ Terminal=false
 X-KDE-autostart-after=panel
 DESKTOP
 chmod 644 -- "$NEW_DESKTOP"
-if ((MIGRATE)); then
-  rm -f -- "$OLD_DESKTOP"
-  # Keep the old Python file as a local fallback; only disable its autostart.
-fi
 printf '  Dateien und Autostart aktualisiert ✓\n'
 
 printf '[7/7] Neues Tray starten ...\n'
@@ -195,4 +173,4 @@ if [[ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]]; then
 else printf '  Keine grafische Sitzung erkannt; Autostart beim nächsten Login aktiv.\n'; fi
 COMMITTED=1
 printf '\n✓ Installation/Update erfolgreich!\nBackup: %s\n' "$BACKUP_DIR"
-printf '  SKYNET-Python-Datei wurde nicht gelöscht. Der alte Autostart wurde nur bei bestätigter Migration entfernt.\n'
+printf '  Nur die eigene Tailscale-Tray-Installation wurde aktualisiert.\n'
