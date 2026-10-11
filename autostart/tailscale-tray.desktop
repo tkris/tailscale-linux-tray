@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Tailscale Tray
+Comment=Tailscale VPN status and controls
+Exec=sh -c 'exec python3 "$HOME/.local/share/tailscale-tray/tailscale-tray.py"' 
+Icon=network-vpn
+Terminal=false
+X-KDE-autostart-after=panel
