@@ -119,6 +119,10 @@ class TailscaleTray(QSystemTrayIcon):
         self.setContextMenu(self.menu)
         self.activated.connect(self.clicked)
         self.login_process = None
+        self.connection_process = None
+        self.connection_timeout = QTimer(self)
+        self.connection_timeout.setSingleShot(True)
+        self.connection_timeout.timeout.connect(self.connection_timed_out)
         self.login_output = ""
         self.login_url = None
         self.login_dialog_shown = False
@@ -203,7 +207,7 @@ class TailscaleTray(QSystemTrayIcon):
         self.setIcon(self.status_icon(state))
         self.setToolTip("Tailscale – " + label)
         self.status_action.setText("● Tailscale: " + label)
-        busy = self.login_process is not None
+        busy = self.login_process is not None or self.connection_process is not None
         self.connect_action.setText(tr('Tailscale einrichten / anmelden', 'Set up / sign in to Tailscale') if state == "NeedsLogin" else tr('Tailscale verbinden', 'Connect Tailscale'))
         self.connect_action.setEnabled(state != "Running" and not busy)
         self.disconnect_action.setEnabled(state == "Running" and not busy)
@@ -351,18 +355,45 @@ class TailscaleTray(QSystemTrayIcon):
         return True
 
     def change_connection(self, command):
-        result = run(command)
-        if result.returncode != 0 and self.permission_denied(result):
-            if self.authorize_operator():
-                result = run(command)
-            else:
-                self.update_status()
-                return
-        if result.returncode != 0:
-            QMessageBox.warning(
-                None, "Tailscale",
-                result.stderr or result.stdout or tr('Aktion fehlgeschlagen', 'Action failed')
-            )
+        """Run connect/disconnect without blocking the tray's event loop."""
+        if self.connection_process is not None or self.login_process is not None:
+            return
+        proc = QProcess(self)
+        self.connection_process = proc
+        proc.setProgram(shutil.which("tailscale") or "/usr/bin/tailscale")
+        proc.setArguments([command])
+        proc.finished.connect(lambda code, status, process=proc: self.connection_finished(process, code))
+        proc.errorOccurred.connect(lambda error, process=proc: self.connection_error(process))
+        proc.start()
+        self.connection_timeout.start(20000)
+        self.connect_action.setEnabled(False)
+        self.disconnect_action.setEnabled(False)
+
+    def connection_timed_out(self):
+        proc = self.connection_process
+        if proc is not None:
+            proc.kill()
+            self.finish_connection(proc, -1, tr('Zeitüberschreitung beim Tailscale-Befehl.', 'Tailscale command timed out.'))
+
+    def connection_error(self, proc):
+        if proc is self.connection_process and proc.state() == PROC_STATE.NotRunning:
+            self.finish_connection(proc, -1, proc.errorString())
+
+    def connection_finished(self, proc, code):
+        if proc is not self.connection_process:
+            return
+        output = bytes(proc.readAllStandardOutput()).decode("utf-8", errors="replace")
+        error = bytes(proc.readAllStandardError()).decode("utf-8", errors="replace")
+        self.finish_connection(proc, code, error or output)
+
+    def finish_connection(self, proc, code, message):
+        if proc is not self.connection_process:
+            return
+        self.connection_process = None
+        self.connection_timeout.stop()
+        proc.deleteLater()
+        if code != 0:
+            QMessageBox.warning(None, "Tailscale", message or tr('Aktion fehlgeschlagen', 'Action failed'))
         self.update_status()
 
     def connect_vpn(self):
