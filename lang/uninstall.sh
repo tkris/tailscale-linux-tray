@@ -23,15 +23,25 @@ if ! confirm 'Really uninstall Tailscale Tray?'; then
   exit 0
 fi
 
-# Only stop this user's process if its argv contains the exact installed script path.
+# Match only a Python interpreter executing this exact script as argv[1].
+is_tray_pid() {
+  local pid="$1" exe script
+  [[ -r "/proc/$pid/cmdline" ]] || return 1
+  [[ "$(stat -c %u "/proc/$pid" 2>/dev/null || true)" == "$EUID" ]] || return 1
+  local -a argv=()
+  mapfile -d '' -t argv < "/proc/$pid/cmdline" || return 1
+  (("${#argv[@]}" >= 2)) || return 1
+  exe="${argv[0]}"; script="${argv[1]}"
+  case "${exe##*/}" in
+    python|python[0-9]|python[0-9].[0-9]|python[0-9].[0-9][0-9]) ;;
+    *) return 1 ;;
+  esac
+  [[ "$script" == "$APP_FILE" ]]
+}
 pids=()
 for proc in /proc/[0-9]*/cmdline; do
-  [[ -r "$proc" ]] || continue
   pid="${proc#/proc/}"; pid="${pid%/cmdline}"
-  [[ "$(stat -c %u "/proc/$pid" 2>/dev/null || true)" == "$EUID" ]] || continue
-  while IFS= read -r -d '' arg; do
-    if [[ "$arg" == "$APP_FILE" ]]; then pids+=("$pid"); break; fi
-  done < "$proc" || true
+  if is_tray_pid "$pid"; then pids+=("$pid"); fi
 done
 
 if ((${#pids[@]})); then

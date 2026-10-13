@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Simple Tailscale tray for Linux desktops supporting StatusNotifier."""
-APP_VERSION = "10.1.0"
+APP_VERSION = "10.2.0"
 import json
 import os
 import re
@@ -119,10 +119,20 @@ class TailscaleTray(QSystemTrayIcon):
         self.setContextMenu(self.menu)
         self.activated.connect(self.clicked)
         self.login_process = None
+        self.connection_process = None
+        self.connection_timeout = QTimer(self)
+        self.connection_timeout.setSingleShot(True)
+        self.connection_timeout.timeout.connect(self.connection_timed_out)
         self.login_output = ""
         self.login_url = None
         self.login_dialog_shown = False
         self.menu.aboutToShow.connect(self.refresh_settings)
+        self.current_state = "Unknown"
+        self.status_process = None
+        self.status_timeout = QTimer(self)
+        self.status_timeout.setSingleShot(True)
+        self.status_timeout.timeout.connect(self.status_timed_out)
+        self.setIcon(self.status_icon("Unknown"))
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_status)
         self.timer.start(5000)
@@ -143,36 +153,72 @@ class TailscaleTray(QSystemTrayIcon):
         return QIcon(pixmap)
 
     def backend_state(self):
-        result = run("status", "--json")
-        if result.returncode != 0 and not result.stdout:
-            return "Unknown"
-        try:
-            return json.loads(result.stdout).get("BackendState", "Unknown")
-        except (ValueError, TypeError):
-            return "Unknown"
+        return self.current_state
 
     def is_connected(self):
-        return self.backend_state() == "Running"
+        return self.current_state == "Running"
 
     def update_status(self):
-        state = self.backend_state()
+        """Poll without blocking the Qt event loop or overlapping requests."""
+        if self.status_process is not None:
+            return
+        proc = QProcess(self)
+        self.status_process = proc
+        proc.setProgram(shutil.which("tailscale") or "/usr/bin/tailscale")
+        proc.setArguments(["status", "--json"])
+        proc.finished.connect(lambda code, status, process=proc: self.status_finished(process, code))
+        proc.errorOccurred.connect(lambda error, process=proc: self.status_error(process))
+        proc.start()
+        self.status_timeout.start(10000)
+
+    def status_timed_out(self):
+        proc = self.status_process
+        if proc is not None:
+            proc.kill()
+            self.finish_status_process(proc, "Unknown")
+
+    def status_error(self, proc):
+        if proc is self.status_process and proc.state() == PROC_STATE.NotRunning:
+            self.finish_status_process(proc, "Unknown")
+
+    def status_finished(self, proc, code):
+        if proc is not self.status_process:
+            return
+        state = "Unknown"
+        if code == 0:
+            try:
+                data = json.loads(bytes(proc.readAllStandardOutput()).decode("utf-8", errors="replace"))
+                if isinstance(data, dict) and isinstance(data.get("BackendState"), str):
+                    state = data["BackendState"]
+            except (ValueError, TypeError):
+                pass
+        self.finish_status_process(proc, state)
+
+    def finish_status_process(self, proc, state):
+        if proc is not self.status_process:
+            return
+        self.status_process = None
+        self.status_timeout.stop()
+        proc.deleteLater()
+        self.current_state = state
         labels = {"Running": tr('Verbunden', 'Connected'), "NeedsLogin": tr('Nicht angemeldet', 'Not signed in'),
                   "Stopped": tr('Getrennt', 'Disconnected'), "Starting": tr('Wird gestartet', 'Starting')}
         label = labels.get(state, tr('Status unbekannt', 'Status unknown'))
         self.setIcon(self.status_icon(state))
         self.setToolTip("Tailscale – " + label)
         self.status_action.setText("● Tailscale: " + label)
-        busy = self.login_process is not None
+        busy = self.login_process is not None or self.connection_process is not None
         self.connect_action.setText(tr('Tailscale einrichten / anmelden', 'Set up / sign in to Tailscale') if state == "NeedsLogin" else tr('Tailscale verbinden', 'Connect Tailscale'))
         self.connect_action.setEnabled(state != "Running" and not busy)
         self.disconnect_action.setEnabled(state == "Running" and not busy)
 
     def status_data(self):
         result = run("status", "--json")
-        if not result.stdout:
+        if result.returncode != 0 or not result.stdout:
             return {}
         try:
-            return json.loads(result.stdout)
+            data = json.loads(result.stdout)
+            return data if isinstance(data, dict) else {}
         except (ValueError, TypeError):
             return {}
 
@@ -181,7 +227,8 @@ class TailscaleTray(QSystemTrayIcon):
         if result.returncode != 0:
             return {}
         try:
-            return json.loads(result.stdout)
+            data = json.loads(result.stdout)
+            return data if isinstance(data, dict) else {}
         except (ValueError, TypeError):
             return {}
 
@@ -235,7 +282,8 @@ class TailscaleTray(QSystemTrayIcon):
         no_exit.setChecked(not bool(selected_id))
         no_exit.triggered.connect(lambda _=False: self.select_exit_node(""))
 
-        peers = list((data.get("Peer") or {}).values())
+        peer_data = data.get("Peer")
+        peers = list(peer_data.values()) if isinstance(peer_data, dict) else []
         self_node = data.get("Self")
         if isinstance(self_node, dict):
             peers.append(self_node)
@@ -245,7 +293,7 @@ class TailscaleTray(QSystemTrayIcon):
         ]
         if eligible:
             self.exit_menu.addSeparator()
-        for peer in sorted(eligible, key=lambda item: item.get("HostName", "").lower()):
+        for peer in sorted(eligible, key=lambda item: str(item.get("HostName") or "").lower()):
             node_id = peer["ID"]
             name = peer.get("HostName") or peer.get("DNSName") or node_id
             action = self.exit_menu.addAction(name)
@@ -306,19 +354,57 @@ class TailscaleTray(QSystemTrayIcon):
             return False
         return True
 
-    def change_connection(self, command):
-        result = run(command)
-        if result.returncode != 0 and self.permission_denied(result):
+    def change_connection(self, command, allow_authorization=True):
+        """Run connect/disconnect without blocking the tray's event loop."""
+        if self.connection_process is not None or self.login_process is not None:
+            return
+        proc = QProcess(self)
+        self.connection_process = proc
+        self.connection_command = command
+        self.connection_allow_authorization = allow_authorization
+        proc.setProgram(shutil.which("tailscale") or "/usr/bin/tailscale")
+        proc.setArguments([command])
+        proc.finished.connect(lambda code, status, process=proc: self.connection_finished(process, code))
+        proc.errorOccurred.connect(lambda error, process=proc: self.connection_error(process))
+        proc.start()
+        self.connection_timeout.start(20000)
+        self.connect_action.setEnabled(False)
+        self.disconnect_action.setEnabled(False)
+
+    def connection_timed_out(self):
+        proc = self.connection_process
+        if proc is not None:
+            proc.kill()
+            self.finish_connection(proc, -1, tr('Zeitüberschreitung beim Tailscale-Befehl.', 'Tailscale command timed out.'))
+
+    def connection_error(self, proc):
+        if proc is self.connection_process and proc.state() == PROC_STATE.NotRunning:
+            self.finish_connection(proc, -1, proc.errorString())
+
+    def connection_finished(self, proc, code):
+        if proc is not self.connection_process:
+            return
+        output = bytes(proc.readAllStandardOutput()).decode("utf-8", errors="replace")
+        error = bytes(proc.readAllStandardError()).decode("utf-8", errors="replace")
+        self.finish_connection(proc, code, error or output)
+
+    def finish_connection(self, proc, code, message):
+        if proc is not self.connection_process:
+            return
+        command = self.connection_command
+        allow_authorization = self.connection_allow_authorization
+        self.connection_process = None
+        self.connection_timeout.stop()
+        proc.deleteLater()
+        if code != 0 and allow_authorization and self.permission_denied(
+                subprocess.CompletedProcess([], code, "", message)):
             if self.authorize_operator():
-                result = run(command)
-            else:
-                self.update_status()
+                self.change_connection(command, allow_authorization=False)
                 return
-        if result.returncode != 0:
-            QMessageBox.warning(
-                None, "Tailscale",
-                result.stderr or result.stdout or tr('Aktion fehlgeschlagen', 'Action failed')
-            )
+            self.update_status()
+            return
+        if code != 0:
+            QMessageBox.warning(None, "Tailscale", message or tr('Aktion fehlgeschlagen', 'Action failed'))
         self.update_status()
 
     def connect_vpn(self):
@@ -326,8 +412,6 @@ class TailscaleTray(QSystemTrayIcon):
             self.start_login()
         else:
             self.change_connection("up")
-            if self.backend_state() == "NeedsLogin":
-                self.start_login()
 
     def disconnect_vpn(self):
         self.change_connection("down")

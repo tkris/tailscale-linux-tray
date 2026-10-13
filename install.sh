@@ -84,7 +84,7 @@ rollback() {
 }
 trap rollback ERR INT TERM EXIT
 
-printf '\n=== Tailscale Tray v10.1.0 – Linux Installer / Updater ===\n\n'
+printf '\n=== Tailscale Tray v10.2.0 – Linux Installer / Updater ===\n\n'
 [[ "$EUID" -ne 0 ]] || fail 'Nicht mit sudo ausführen.'
 [[ -f "$SOURCE_DIR/tailscale-tray.py" ]] || fail 'tailscale-tray.py fehlt.'
 [[ -f "$SOURCE_DIR/autostart/tailscale-tray.desktop" ]] || fail 'Autostart-Vorlage fehlt.'
