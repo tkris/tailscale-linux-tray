@@ -125,6 +125,10 @@ class TailscaleTray(QSystemTrayIcon):
         self.menu.aboutToShow.connect(self.refresh_settings)
         self.current_state = "Unknown"
         self.status_process = None
+        self.status_timeout = QTimer(self)
+        self.status_timeout.setSingleShot(True)
+        self.status_timeout.timeout.connect(self.status_timed_out)
+        self.setIcon(self.status_icon("Unknown"))
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_status)
         self.timer.start(5000)
@@ -161,6 +165,13 @@ class TailscaleTray(QSystemTrayIcon):
         proc.finished.connect(lambda code, status, process=proc: self.status_finished(process, code))
         proc.errorOccurred.connect(lambda error, process=proc: self.status_error(process))
         proc.start()
+        self.status_timeout.start(10000)
+
+    def status_timed_out(self):
+        proc = self.status_process
+        if proc is not None:
+            proc.kill()
+            self.finish_status_process(proc, "Unknown")
 
     def status_error(self, proc):
         if proc is self.status_process and proc.state() == PROC_STATE.NotRunning:
@@ -183,6 +194,7 @@ class TailscaleTray(QSystemTrayIcon):
         if proc is not self.status_process:
             return
         self.status_process = None
+        self.status_timeout.stop()
         proc.deleteLater()
         self.current_state = state
         labels = {"Running": tr('Verbunden', 'Connected'), "NeedsLogin": tr('Nicht angemeldet', 'Not signed in'),
