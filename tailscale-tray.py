@@ -123,6 +123,8 @@ class TailscaleTray(QSystemTrayIcon):
         self.login_url = None
         self.login_dialog_shown = False
         self.menu.aboutToShow.connect(self.refresh_settings)
+        self.current_state = "Unknown"
+        self.status_process = None
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_status)
         self.timer.start(5000)
@@ -143,19 +145,46 @@ class TailscaleTray(QSystemTrayIcon):
         return QIcon(pixmap)
 
     def backend_state(self):
-        result = run("status", "--json")
-        if result.returncode != 0 and not result.stdout:
-            return "Unknown"
-        try:
-            return json.loads(result.stdout).get("BackendState", "Unknown")
-        except (ValueError, TypeError):
-            return "Unknown"
+        return self.current_state
 
     def is_connected(self):
-        return self.backend_state() == "Running"
+        return self.current_state == "Running"
 
     def update_status(self):
-        state = self.backend_state()
+        """Poll without blocking the Qt event loop or overlapping requests."""
+        if self.status_process is not None:
+            return
+        proc = QProcess(self)
+        self.status_process = proc
+        proc.setProgram(shutil.which("tailscale") or "/usr/bin/tailscale")
+        proc.setArguments(["status", "--json"])
+        proc.finished.connect(lambda code, status, process=proc: self.status_finished(process, code))
+        proc.errorOccurred.connect(lambda error, process=proc: self.status_error(process))
+        proc.start()
+
+    def status_error(self, proc):
+        if proc is self.status_process and proc.state() == PROC_STATE.NotRunning:
+            self.finish_status_process(proc, "Unknown")
+
+    def status_finished(self, proc, code):
+        if proc is not self.status_process:
+            return
+        state = "Unknown"
+        if code == 0:
+            try:
+                data = json.loads(bytes(proc.readAllStandardOutput()).decode("utf-8", errors="replace"))
+                if isinstance(data, dict) and isinstance(data.get("BackendState"), str):
+                    state = data["BackendState"]
+            except (ValueError, TypeError):
+                pass
+        self.finish_status_process(proc, state)
+
+    def finish_status_process(self, proc, state):
+        if proc is not self.status_process:
+            return
+        self.status_process = None
+        proc.deleteLater()
+        self.current_state = state
         labels = {"Running": tr('Verbunden', 'Connected'), "NeedsLogin": tr('Nicht angemeldet', 'Not signed in'),
                   "Stopped": tr('Getrennt', 'Disconnected'), "Starting": tr('Wird gestartet', 'Starting')}
         label = labels.get(state, tr('Status unbekannt', 'Status unknown'))
@@ -169,10 +198,11 @@ class TailscaleTray(QSystemTrayIcon):
 
     def status_data(self):
         result = run("status", "--json")
-        if not result.stdout:
+        if result.returncode != 0 or not result.stdout:
             return {}
         try:
-            return json.loads(result.stdout)
+            data = json.loads(result.stdout)
+            return data if isinstance(data, dict) else {}
         except (ValueError, TypeError):
             return {}
 
@@ -181,7 +211,8 @@ class TailscaleTray(QSystemTrayIcon):
         if result.returncode != 0:
             return {}
         try:
-            return json.loads(result.stdout)
+            data = json.loads(result.stdout)
+            return data if isinstance(data, dict) else {}
         except (ValueError, TypeError):
             return {}
 
@@ -235,7 +266,8 @@ class TailscaleTray(QSystemTrayIcon):
         no_exit.setChecked(not bool(selected_id))
         no_exit.triggered.connect(lambda _=False: self.select_exit_node(""))
 
-        peers = list((data.get("Peer") or {}).values())
+        peer_data = data.get("Peer")
+        peers = list(peer_data.values()) if isinstance(peer_data, dict) else []
         self_node = data.get("Self")
         if isinstance(self_node, dict):
             peers.append(self_node)
@@ -245,7 +277,7 @@ class TailscaleTray(QSystemTrayIcon):
         ]
         if eligible:
             self.exit_menu.addSeparator()
-        for peer in sorted(eligible, key=lambda item: item.get("HostName", "").lower()):
+        for peer in sorted(eligible, key=lambda item: str(item.get("HostName") or "").lower()):
             node_id = peer["ID"]
             name = peer.get("HostName") or peer.get("DNSName") or node_id
             action = self.exit_menu.addAction(name)
@@ -326,8 +358,6 @@ class TailscaleTray(QSystemTrayIcon):
             self.start_login()
         else:
             self.change_connection("up")
-            if self.backend_state() == "NeedsLogin":
-                self.start_login()
 
     def disconnect_vpn(self):
         self.change_connection("down")
