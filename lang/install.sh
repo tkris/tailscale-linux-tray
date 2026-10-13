@@ -72,7 +72,7 @@ rollback() {
 }
 trap rollback ERR INT TERM EXIT
 
-printf '\n=== Tailscale Tray v10.0.2 – Linux Installer / Updater ===\n\n'
+printf '\n=== Tailscale Tray v10.1.0 – Linux Installer / Updater ===\n\n'
 [[ "$EUID" -ne 0 ]] || fail 'Do not run with sudo.'
 [[ -f "$SOURCE_DIR/tailscale-tray.py" ]] || fail 'tailscale-tray.py is missing.'
 [[ -f "$SOURCE_DIR/autostart/tailscale-tray.desktop" ]] || fail 'Autostart template is missing.'
@@ -86,21 +86,36 @@ case " ${ID:-} ${ID_LIKE:-} " in
   *linuxmint*|*ubuntu*|*debian*) PKG_MANAGER=apt; QT_PKG=python3-pyqt6 ;;
   *) fail "Unsupported distribution: ${PRETTY_NAME:-unknown}" ;;
 esac
+if [[ "$PKG_MANAGER" == apt ]]; then
+  if [[ "${VERSION_CODENAME:-}" == virginia || "${VERSION_CODENAME:-}" == vera ||
+        "${VERSION_CODENAME:-}" == vanessa || "${UBUNTU_CODENAME:-}" == jammy ]]; then
+    QT_PKG=python3-pyqt5
+  fi
+fi
 command -v "$PKG_MANAGER" >/dev/null || fail "Package manager $PKG_MANAGER is missing."
 DESKTOP_NAME=""
 if [[ "${XDG_CURRENT_DESKTOP:-}" == *KDE* || "${XDG_CURRENT_DESKTOP:-}" == *Plasma* || "${DESKTOP_SESSION:-}" == *plasma* ]]; then
   DESKTOP_NAME="KDE Plasma"
 elif [[ "${XDG_CURRENT_DESKTOP:-}" == *Cinnamon* || "${DESKTOP_SESSION:-}" == *cinnamon* ]]; then
   DESKTOP_NAME="Cinnamon"
+elif [[ "${XDG_CURRENT_DESKTOP:-}" == *[Xx][Ff][Cc][Ee]* || "${DESKTOP_SESSION:-}" == *[Xx][Ff][Cc][Ee]* ]]; then
+  DESKTOP_NAME="Xfce"
 fi
-[[ -n "$DESKTOP_NAME" ]] || fail 'KDE Plasma or Cinnamon is required.'
+[[ -n "$DESKTOP_NAME" ]] || fail 'KDE Plasma, Cinnamon or Xfce is required.'
 printf '  %s / %s / %s ✓\n' "${PRETTY_NAME:-$ID}" "$PKG_MANAGER" "$DESKTOP_NAME"
 
 printf '[2/7] Checking dependencies ...\n'
 missing=()
 command -v tailscale >/dev/null 2>&1 || missing+=(tailscale)
 [[ -x "$PYTHON_BIN" ]] || missing+=(python3)
-if [[ ! -x "$PYTHON_BIN" ]] || ! "$PYTHON_BIN" -c 'import PyQt6.QtWidgets' >/dev/null 2>&1; then missing+=("$QT_PKG"); fi
+if [[ -x "$PYTHON_BIN" ]] && "$PYTHON_BIN" -c 'import PyQt6.QtWidgets' >/dev/null 2>&1; then
+  QT_FOUND=PyQt6
+elif [[ -x "$PYTHON_BIN" ]] && "$PYTHON_BIN" -c 'import PyQt5.QtWidgets' >/dev/null 2>&1; then
+  QT_FOUND=PyQt5
+else
+  QT_FOUND=""
+  missing+=("$QT_PKG")
+fi
 if ((${#missing[@]})); then
   printf '  Missing: %s\n' "${missing[*]}"
   if confirm 'Install missing packages?'; then
@@ -112,7 +127,8 @@ if ((${#missing[@]})); then
   else fail 'Canceled; no application files changed.'; fi
 else printf '  All dependencies available ✓\n'; fi
 command -v tailscale >/dev/null || fail 'tailscale is still missing.'
-[[ -x "$PYTHON_BIN" ]] && "$PYTHON_BIN" -c 'import PyQt6.QtWidgets' || fail 'Python/PyQt6 not ready.'
+[[ -x "$PYTHON_BIN" ]] && "$PYTHON_BIN" -c 'import PyQt6.QtWidgets' >/dev/null 2>&1 ||
+  { [[ -x "$PYTHON_BIN" ]] && "$PYTHON_BIN" -c 'import PyQt5.QtWidgets' >/dev/null 2>&1; } || fail 'Python/PyQt5 or PyQt6 not ready.'
 "$PYTHON_BIN" -m py_compile "$SOURCE_DIR/tailscale-tray.py" || fail 'Python syntax error.'
 
 printf '[3/7] Checking Tailscale service ...\n'

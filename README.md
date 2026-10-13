@@ -6,9 +6,9 @@
 
 ## English
 
-A **Tailscale system tray for Linux desktops running KDE Plasma or Cinnamon**. It provides convenient access to Tailscale controls directly from the system tray, including connection status, subnet routes, and exit node selection.
+A **Tailscale system tray for Linux desktops running KDE Plasma, Cinnamon or Xfce**. It provides convenient access to Tailscale controls directly from the system tray, including connection status, subnet routes, and exit node selection.
 
-**Current version:** v10.0.2 · **UI and script messages:** German/English
+**Current version:** v10.1.0 · **UI and script messages:** German/English
 
 ## Supported systems
 
@@ -17,6 +17,7 @@ A **Tailscale system tray for Linux desktops running KDE Plasma or Cinnamon**. I
 | Nobara Linux | KDE Plasma | `dnf` | Installation and tray tested |
 | CachyOS | KDE Plasma | `pacman` | Installation and tray tested |
 | Linux Mint 22.1 | Cinnamon (X11) | `apt` | Installation, tray and browser sign-in tested; remaining features not fully tested |
+| Linux Mint 21.3 | Xfce 4.18 | `apt` | PyQt5 tray, status table and controls tested manually; v10.1.0 installer pending test |
 
 Other distributions are not officially supported yet.
 
@@ -55,7 +56,7 @@ Alternatively, download the repository as a ZIP file from GitHub, extract it, an
 
 **Run the installer as your regular user, not with `sudo bash install.sh`.** It will ask for administrator privileges separately when required.
 
-The installer checks the distribution, KDE Plasma or Cinnamon, dependencies, and the `tailscaled` service. It **independently checks** whether `tailscaled` is enabled at boot, even when the service is already running, and offers to enable it with confirmation. Missing packages are installed only after your confirmation. It then offers to launch the tray.
+The installer checks the distribution, KDE Plasma, Cinnamon or Xfce, dependencies, and the `tailscaled` service. It **independently checks** whether `tailscaled` is enabled at boot, even when the service is already running, and offers to enable it with confirmation. Missing packages are installed only after your confirmation. It then offers to launch the tray.
 
 ## Updating
 
@@ -103,7 +104,7 @@ Run the uninstaller **without `sudo`**. It asks for confirmation before stopping
 
 ## Requirements and notes
 
-- KDE Plasma or Cinnamon with working system tray support
+- KDE Plasma, Cinnamon or Xfce with working system tray support
 - Python 3 and PyQt6
 - Tailscale and its `tailscaled` service
 - For graphical administrator authentication: `pkexec` and a working Polkit agent
@@ -140,7 +141,7 @@ This project was developed with assistance from **OpenAI ChatGPT**. AI was used 
 
 Ein **Tailscale-System-Tray für Linux mit KDE Plasma und Cinnamon**. Es ermöglicht die komfortable Steuerung von Tailscale direkt über die Taskleiste – einschließlich Verbindungsstatus, Subnetz-Routen und Exit-Node-Auswahl.
 
-**Aktuelle Version:** v10.0.2 · **Oberfläche und Skriptmeldungen:** Deutsch/Englisch
+**Aktuelle Version:** v10.1.0 · **Oberfläche und Skriptmeldungen:** Deutsch/Englisch
 
 ## Unterstützte Systeme
 
@@ -279,7 +280,7 @@ Dieses Projekt wurde mit Unterstützung von **OpenAI ChatGPT** entwickelt. KI wu
 
 ---
 
-## v10.0.2 – Vorbereitung für die öffentliche Veröffentlichung / Public release preparation
+## v10.1.0 – Vorbereitung für die öffentliche Veröffentlichung / Public release preparation
 
 **Deutsch**
 

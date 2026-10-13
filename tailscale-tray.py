@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Simple Tailscale tray for Linux desktops supporting StatusNotifier."""
-APP_VERSION = "10.0.2"
+APP_VERSION = "10.1.0"
 import json
 import os
 import re
@@ -8,9 +8,35 @@ import getpass
 import shutil
 import subprocess
 import sys
-from PyQt6.QtCore import QTimer, QProcess, QUrl
-from PyQt6.QtGui import QAction, QIcon, QPixmap, QPainter, QColor, QDesktopServices
-from PyQt6.QtWidgets import QApplication, QMenu, QMessageBox, QSystemTrayIcon
+try:
+    from PyQt6.QtCore import QTimer, QProcess, QUrl
+    from PyQt6.QtGui import QAction, QIcon, QPixmap, QPainter, QColor, QDesktopServices
+    from PyQt6.QtWidgets import (QApplication, QMenu, QMessageBox, QSystemTrayIcon,
+        QDialog, QVBoxLayout, QHBoxLayout, QLabel, QTableWidget,
+        QTableWidgetItem, QHeaderView, QAbstractItemView, QPushButton)
+    QT_VERSION = 6
+except ImportError as exc:
+    # Fall back only when PyQt6 itself is missing, not when its installation is broken.
+    if not (exc.name == 'PyQt6' or (exc.name or '').startswith('PyQt6.')):
+        raise
+    from PyQt5.QtCore import QTimer, QProcess, QUrl
+    from PyQt5.QtGui import QIcon, QPixmap, QPainter, QColor, QDesktopServices
+    from PyQt5.QtWidgets import (QAction, QApplication, QMenu, QMessageBox,
+        QSystemTrayIcon, QDialog, QVBoxLayout, QHBoxLayout, QLabel,
+        QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QPushButton)
+    QT_VERSION = 5
+
+# Qt5 and Qt6 expose these enums in different places.
+MSG_BUTTON = QMessageBox.StandardButton if QT_VERSION == 6 else QMessageBox
+MSG_ICON = QMessageBox.Icon if QT_VERSION == 6 else QMessageBox
+TRAY_REASON = QSystemTrayIcon.ActivationReason if QT_VERSION == 6 else QSystemTrayIcon
+PROC_CHANNEL = QProcess.ProcessChannelMode if QT_VERSION == 6 else QProcess
+PROC_STATE = QProcess.ProcessState if QT_VERSION == 6 else QProcess
+PAINTER_HINT = QPainter.RenderHint if QT_VERSION == 6 else QPainter
+TABLE_EDIT = QAbstractItemView.EditTrigger if QT_VERSION == 6 else QAbstractItemView
+TABLE_SELECT = QAbstractItemView.SelectionBehavior if QT_VERSION == 6 else QAbstractItemView
+HEADER_MODE = QHeaderView.ResizeMode if QT_VERSION == 6 else QHeaderView
+
 
 
 def language():
@@ -40,24 +66,24 @@ def run(*args):
 def question_dialog(parent, title, message, buttons, default_button):
     """Localize only buttons owned by our application's Qt confirmation dialogs."""
     dialog = QMessageBox(parent)
-    dialog.setIcon(QMessageBox.Icon.Question)
+    dialog.setIcon(MSG_ICON.Question)
     dialog.setWindowTitle(title)
     dialog.setText(message)
     dialog.setStandardButtons(buttons)
     dialog.setDefaultButton(default_button)
     translations = {
-        QMessageBox.StandardButton.Yes: tr("Ja", "Yes"),
-        QMessageBox.StandardButton.No: tr("Nein", "No"),
-        QMessageBox.StandardButton.Cancel: tr("Abbrechen", "Cancel"),
-        QMessageBox.StandardButton.Close: tr("Schließen", "Close"),
-        QMessageBox.StandardButton.Retry: tr("Wiederholen", "Retry"),
-        QMessageBox.StandardButton.Ok: "OK",
+        MSG_BUTTON.Yes: tr("Ja", "Yes"),
+        MSG_BUTTON.No: tr("Nein", "No"),
+        MSG_BUTTON.Cancel: tr("Abbrechen", "Cancel"),
+        MSG_BUTTON.Close: tr("Schließen", "Close"),
+        MSG_BUTTON.Retry: tr("Wiederholen", "Retry"),
+        MSG_BUTTON.Ok: "OK",
     }
     for button_type, label in translations.items():
         button = dialog.button(button_type)
         if button is not None:
             button.setText(label)
-    return QMessageBox.StandardButton(dialog.exec())
+    return MSG_BUTTON(dialog.exec()) if QT_VERSION == 6 else dialog.exec_()
 
 
 class TailscaleTray(QSystemTrayIcon):
@@ -109,7 +135,7 @@ class TailscaleTray(QSystemTrayIcon):
         pixmap = QPixmap(32, 32)
         pixmap.fill(QColor("transparent"))
         painter = QPainter(pixmap)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setRenderHint(PAINTER_HINT.Antialiasing)
         painter.setBrush(QColor(colors.get(state, "#ef4444")))
         painter.setPen(QColor("#ffffff"))
         painter.drawEllipse(3, 3, 26, 26)
@@ -258,10 +284,10 @@ class TailscaleTray(QSystemTrayIcon):
             + tr('Soll einmalig eine Administratorfreigabe über den Systemdialog ', 'Request one-time administrator authorization through the system dialog ')
             + tr('angefordert werden?\n\n', '?\n\n')
             + tr(f"Der Benutzer {username} wird als Tailscale-Operator eingerichtet.", f"User {username} will be configured as a Tailscale operator."),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
+            MSG_BUTTON.Yes | MSG_BUTTON.No,
+            MSG_BUTTON.No
         )
-        if answer != QMessageBox.StandardButton.Yes:
+        if answer != MSG_BUTTON.Yes:
             return False
         try:
             result = subprocess.run(
@@ -314,10 +340,10 @@ class TailscaleTray(QSystemTrayIcon):
                 None, tr('Tailscale – Ersteinrichtung', 'Tailscale – Initial setup'),
                 tr('Dieser Rechner ist noch nicht bei Tailscale angemeldet.\n\n', 'This computer is not signed in to Tailscale yet.\n\n')
                 + tr('Soll die Anmeldung gestartet werden? Ein Link wird im Browser geöffnet.', 'Start sign-in? A link will open in your browser.'),
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.Yes
+                MSG_BUTTON.Yes | MSG_BUTTON.No,
+                MSG_BUTTON.Yes
             )
-            if answer != QMessageBox.StandardButton.Yes:
+            if answer != MSG_BUTTON.Yes:
                 return
         self.login_output = ""
         self.login_url = None
@@ -326,7 +352,7 @@ class TailscaleTray(QSystemTrayIcon):
         self.login_process = proc
         proc.setProgram(shutil.which("tailscale") or "/usr/bin/tailscale")
         proc.setArguments(["up"])
-        proc.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
+        proc.setProcessChannelMode(PROC_CHANNEL.MergedChannels)
         proc.readyReadStandardOutput.connect(self.login_read_output)
         proc.finished.connect(self.login_finished)
         proc.errorOccurred.connect(self.login_error)
@@ -367,18 +393,99 @@ class TailscaleTray(QSystemTrayIcon):
                                 tr('Die Anmeldung wurde nicht abgeschlossen.\n\n', 'Sign-in was not completed.\n\n') + self.login_output[-2000:])
 
     def login_error(self, _error):
-        if self.login_process is not None and self.login_process.state() == QProcess.ProcessState.NotRunning:
+        if self.login_process is not None and self.login_process.state() == PROC_STATE.NotRunning:
             self.login_read_output()
             self.login_process = None
             self.update_status()
             QMessageBox.warning(None, "Tailscale", tr('Der Anmeldeprozess konnte nicht gestartet werden.', 'Could not start the sign-in process.'))
 
     def show_status(self):
-        result = run("status")
-        QMessageBox.information(None, tr('Tailscale-Status', 'Tailscale status'), result.stdout or result.stderr or tr('Kein Status verfügbar', 'No status available'))
+        data = self.status_data()
+        if not data:
+            QMessageBox.warning(None, tr('Tailscale-Status', 'Tailscale status'),
+                                tr('Status konnte nicht geladen werden.', 'Could not load status.'))
+            return
+
+        dialog = QDialog()
+        dialog.setWindowTitle(tr('Tailscale – Netzwerkstatus', 'Tailscale – Network status'))
+        dialog.resize(850, 440)
+        layout = QVBoxLayout(dialog)
+        headline = QLabel()
+        layout.addWidget(headline)
+        table = QTableWidget()
+        table.setColumnCount(5)
+        table.setHorizontalHeaderLabels([
+            tr('Gerät', 'Device'), 'Tailscale-IP', 'OS',
+            tr('Status', 'Status'), tr('Verbindung', 'Connection')
+        ])
+        table.setEditTriggers(TABLE_EDIT.NoEditTriggers)
+        table.setSelectionBehavior(TABLE_SELECT.SelectRows)
+        table.setAlternatingRowColors(True)
+        table.verticalHeader().setVisible(False)
+        table.horizontalHeader().setSectionResizeMode(0, HEADER_MODE.Stretch)
+        for col in range(1, 5):
+            table.horizontalHeader().setSectionResizeMode(col, HEADER_MODE.ResizeToContents)
+        layout.addWidget(table)
+
+        buttons = QHBoxLayout()
+        buttons.addStretch()
+        refresh = QPushButton(tr('Aktualisieren', 'Refresh'))
+        close = QPushButton(tr('Schließen', 'Close'))
+        buttons.addWidget(refresh)
+        buttons.addWidget(close)
+        layout.addLayout(buttons)
+        close.clicked.connect(dialog.accept)
+
+        def populate():
+            current = self.status_data()
+            if not current:
+                QMessageBox.warning(dialog, tr('Tailscale-Status', 'Tailscale status'),
+                                    tr('Status konnte nicht geladen werden.', 'Could not load status.'))
+                return
+            backend = current.get('BackendState', 'Unknown')
+            states = {'Running': tr('Verbunden', 'Connected'),
+                      'Stopped': tr('Getrennt', 'Disconnected'),
+                      'NeedsLogin': tr('Nicht angemeldet', 'Not signed in'),
+                      'Starting': tr('Wird gestartet', 'Starting')}
+            devices = []
+            own = current.get('Self')
+            if isinstance(own, dict):
+                devices.append((own, True))
+            peers = current.get('Peer') or {}
+            if isinstance(peers, dict):
+                devices.extend((peer, False) for peer in peers.values() if isinstance(peer, dict))
+            headline.setText('Tailscale: ' + states.get(backend, str(backend)) +
+                             '   |   ' + tr('Geräte: ', 'Devices: ') + str(len(devices)))
+            table.setRowCount(len(devices))
+            for row, (device, is_self) in enumerate(devices):
+                name = device.get('HostName') or device.get('DNSName') or '?'
+                if is_self:
+                    name += tr(' (dieses Gerät)', ' (this device)')
+                ips = device.get('TailscaleIPs') or []
+                ip = ips[0] if ips else '–'
+                online = is_self or bool(device.get('Online'))
+                status = (tr('Dieses Gerät', 'This device') if is_self else
+                          tr('Online', 'Online') if online else tr('Offline', 'Offline'))
+                if is_self:
+                    connection = '–'
+                elif not online:
+                    connection = '–'
+                elif device.get('CurAddr'):
+                    connection = tr('Direkt', 'Direct')
+                elif device.get('Relay'):
+                    connection = 'Relay (' + str(device['Relay']) + ')'
+                else:
+                    connection = '–'
+                values = [name, ip, device.get('OS') or '–', status, connection]
+                for col, value in enumerate(values):
+                    table.setItem(row, col, QTableWidgetItem(str(value)))
+
+        refresh.clicked.connect(populate)
+        populate()
+        dialog.exec() if QT_VERSION == 6 else dialog.exec_()
 
     def clicked(self, reason):
-        if reason == QSystemTrayIcon.ActivationReason.Trigger:
+        if reason == TRAY_REASON.Trigger:
             if self.is_connected():
                 self.disconnect_vpn()
             else:
@@ -395,7 +502,7 @@ def main():
         print(tr('Fehler: Kein System-Tray verfügbar.', 'Error: No system tray available.'), file=sys.stderr)
         return 1
     tray = TailscaleTray()
-    return app.exec()
+    return app.exec() if QT_VERSION == 6 else app.exec_()
 
 
 if __name__ == "__main__":
