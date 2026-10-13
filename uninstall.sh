@@ -82,7 +82,7 @@ fi
 rm -f -- "$APP_FILE" "$AUTOSTART_FILE"
 # Remove the application's directory only if it is empty; leave unrelated files untouched.
 rmdir -- "$APP_DIR" 2>/dev/null || true
-printf 'Tray und KDE-Autostart entfernt.\n'
+printf 'Tray und Desktop-Autostart entfernt.\n'
 
 if [[ -d "$BACKUP_DIR" ]]; then
   printf '\nGefundene Backups: %s\n' "$BACKUP_DIR"
