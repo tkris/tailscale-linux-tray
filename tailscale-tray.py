@@ -354,12 +354,14 @@ class TailscaleTray(QSystemTrayIcon):
             return False
         return True
 
-    def change_connection(self, command):
+    def change_connection(self, command, allow_authorization=True):
         """Run connect/disconnect without blocking the tray's event loop."""
         if self.connection_process is not None or self.login_process is not None:
             return
         proc = QProcess(self)
         self.connection_process = proc
+        self.connection_command = command
+        self.connection_allow_authorization = allow_authorization
         proc.setProgram(shutil.which("tailscale") or "/usr/bin/tailscale")
         proc.setArguments([command])
         proc.finished.connect(lambda code, status, process=proc: self.connection_finished(process, code))
@@ -389,9 +391,18 @@ class TailscaleTray(QSystemTrayIcon):
     def finish_connection(self, proc, code, message):
         if proc is not self.connection_process:
             return
+        command = self.connection_command
+        allow_authorization = self.connection_allow_authorization
         self.connection_process = None
         self.connection_timeout.stop()
         proc.deleteLater()
+        if code != 0 and allow_authorization and self.permission_denied(
+                subprocess.CompletedProcess([], code, "", message)):
+            if self.authorize_operator():
+                self.change_connection(command, allow_authorization=False)
+                return
+            self.update_status()
+            return
         if code != 0:
             QMessageBox.warning(None, "Tailscale", message or tr('Aktion fehlgeschlagen', 'Action failed'))
         self.update_status()
