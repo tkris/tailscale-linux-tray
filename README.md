@@ -8,7 +8,7 @@
 
 A **Tailscale system tray for Linux desktops running KDE Plasma, Cinnamon or Xfce**. It provides convenient access to Tailscale controls directly from the system tray, including connection status, subnet routes, and exit node selection.
 
-**Current version:** v10.1.0 · **UI and script messages:** German/English
+**Current version:** v10.2.0 · **UI and script messages:** German/English
 
 ## Supported systems
 
@@ -17,7 +17,7 @@ A **Tailscale system tray for Linux desktops running KDE Plasma, Cinnamon or Xfc
 | Nobara Linux | KDE Plasma | `dnf` | Installation and tray tested |
 | CachyOS | KDE Plasma | `pacman` | Installation and tray tested |
 | Linux Mint 22.1 | Cinnamon (X11) | `apt` | Installation, tray and browser sign-in tested; remaining features not fully tested |
-| Linux Mint 21.3 | Xfce 4.18 | `apt` | PyQt5 tray, status table and controls tested manually; v10.1.0 installer pending test |
+| Linux Mint 21.3 | Xfce 4.18 | `apt` | PyQt5 tray, status table, connection controls, installation and uninstallation tested with v10.2.0 |
 
 Other distributions are not officially supported yet.
 
@@ -105,7 +105,7 @@ Run the uninstaller **without `sudo`**. It asks for confirmation before stopping
 ## Requirements and notes
 
 - KDE Plasma, Cinnamon or Xfce with working system tray support
-- Python 3 and PyQt6
+- Python 3 and PyQt6 or PyQt5
 - Tailscale and its `tailscaled` service
 - For graphical administrator authentication: `pkexec` and a working Polkit agent
 
@@ -125,6 +125,8 @@ tailscale-linux-tray/
 
 ## Project status
 
+On Linux Mint 21.3 Xfce, v10.2.0 was tested for startup, menu responsiveness, connect/disconnect, installation and uninstallation. A simulated failing Tailscale status command produced a red icon and an accessible menu. Operator authorization without existing permissions, KDE/Cinnamon integration for v10.2.0, and an actually hung status command remain untested.
+
 Installation and core tray functions have been tested on Nobara KDE and CachyOS KDE. On Linux Mint 22.1 Cinnamon, installation, tray menu, missing-login detection and browser sign-in have been tested. Other workflows, such as exit-node configurations and connection toggling, have not been verified on every system.
 
 ## AI assistance disclosure
@@ -139,9 +141,9 @@ This project was developed with assistance from **OpenAI ChatGPT**. AI was used 
 
 ## Deutsch
 
-Ein **Tailscale-System-Tray für Linux mit KDE Plasma und Cinnamon**. Es ermöglicht die komfortable Steuerung von Tailscale direkt über die Taskleiste – einschließlich Verbindungsstatus, Subnetz-Routen und Exit-Node-Auswahl.
+Ein **Tailscale-System-Tray für Linux mit KDE Plasma, Cinnamon oder Xfce**. Es ermöglicht die komfortable Steuerung von Tailscale direkt über die Taskleiste – einschließlich Verbindungsstatus, Subnetz-Routen und Exit-Node-Auswahl.
 
-**Aktuelle Version:** v10.1.0 · **Oberfläche und Skriptmeldungen:** Deutsch/Englisch
+**Aktuelle Version:** v10.2.0 · **Oberfläche und Skriptmeldungen:** Deutsch/Englisch
 
 ## Unterstützte Systeme
 
@@ -150,6 +152,7 @@ Ein **Tailscale-System-Tray für Linux mit KDE Plasma und Cinnamon**. Es ermögl
 | Nobara Linux | KDE Plasma | `dnf` | Installation und Tray getestet |
 | CachyOS | KDE Plasma | `pacman` | Installation und Tray getestet |
 | Linux Mint 22.1 | Cinnamon (X11) | `apt` | Installation, Tray und Browser-Anmeldung getestet; weitere Funktionen noch nicht vollständig getestet |
+| Linux Mint 21.3 | Xfce 4.18 | `apt` | PyQt5-Tray, Statusübersicht, Verbindungssteuerung, Installation und Deinstallation mit v10.2.0 getestet |
 
 Andere Distributionen sind derzeit nicht offiziell unterstützt.
 
@@ -188,7 +191,7 @@ Alternativ kannst du das Projekt als ZIP von GitHub herunterladen, entpacken und
 
 **Installer als normaler Benutzer starten – nicht mit `sudo bash install.sh`.** Wenn Systempakete oder Dienste angepasst werden müssen, fragt das Skript gesondert nach Administratorrechten.
 
-Der Installer prüft die Linux-Distribution, KDE Plasma oder Cinnamon, benötigte Programme sowie den Dienst `tailscaled`. Er prüft **unabhängig vom aktuellen Dienststatus**, ob `tailscaled` beim Systemstart automatisch aktiviert ist, und bietet bei Bedarf die Aktivierung nach Rückfrage an. Fehlende Pakete werden nur nach Zustimmung installiert. Er bietet anschließend an, das Tray zu starten.
+Der Installer prüft die Linux-Distribution, KDE Plasma, Cinnamon oder Xfce, benötigte Programme sowie den Dienst `tailscaled`. Er prüft **unabhängig vom aktuellen Dienststatus**, ob `tailscaled` beim Systemstart automatisch aktiviert ist, und bietet bei Bedarf die Aktivierung nach Rückfrage an. Fehlende Pakete werden nur nach Zustimmung installiert. Er bietet anschließend an, das Tray zu starten.
 
 ## Updates
 
@@ -236,8 +239,8 @@ Der Deinstaller wird **ohne `sudo`** gestartet und fragt vor dem Entfernen der T
 
 ## Voraussetzungen und Hinweise
 
-- KDE Plasma oder Cinnamon mit funktionierender System-Tray-Unterstützung
-- Python 3 und PyQt6
+- KDE Plasma, Cinnamon oder Xfce mit funktionierender System-Tray-Unterstützung
+- Python 3 und PyQt6 oder PyQt5
 - Tailscale und der Dienst `tailscaled`
 - Für die grafische Administratorfreigabe: `pkexec` und ein funktionierender Polkit-Agent
 
@@ -256,6 +259,8 @@ tailscale-linux-tray/
 ```
 
 ## Projektstatus
+
+Unter Linux Mint 21.3 Xfce wurde v10.2.0 hinsichtlich Start, Menübedienung, Verbinden/Trennen, Installation und Deinstallation getestet. Bei einem simulierten Fehler des Tailscale-Statusbefehls blieb das Menü bedienbar und das Symbol wurde rot. Die Operatorfreigabe ohne vorhandene Berechtigung, die KDE-/Cinnamon-Integration von v10.2.0 und ein tatsächlich hängender Statusbefehl wurden noch nicht getestet.
 
 Die Installation und zentrale Tray-Funktionen wurden unter Nobara KDE und CachyOS KDE praktisch ausprobiert. Auf Linux Mint 22.1 Cinnamon wurden Installation, Tray-Menü, Erkennung des fehlenden Logins und Browser-Anmeldung praktisch getestet. Weitere Abläufe wie unterschiedliche Exit-Node-Konfigurationen und Verbindungswechsel sind noch nicht auf allen Systemen geprüft.
 
@@ -280,7 +285,7 @@ Dieses Projekt wurde mit Unterstützung von **OpenAI ChatGPT** entwickelt. KI wu
 
 ---
 
-## v10.1.0 – Vorbereitung für die öffentliche Veröffentlichung / Public release preparation
+## v10.2.0 – Vorbereitung für die öffentliche Veröffentlichung / Public release preparation
 
 **Deutsch**
 
